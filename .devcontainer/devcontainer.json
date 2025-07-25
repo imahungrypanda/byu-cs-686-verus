@@ -23,14 +23,12 @@
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
 
-	"containerEnv": {
-  		"VERUSROOT": "/home/vscode/verus",
-		"VERUS_Z3_PATH": "/usr/bin/z3"
-	},
-
 	// Use 'postCreateCommand' to run commands after the container is created.
 	"postCreateCommand": "git config --global --add safe.directory ${containerWorkspaceFolder} && echo '👉 To complete setup, open a terminal and run: bash .devcontainer/post-create.sh'",
 
+	"containerEnv": {
+  		"RUST_BACKTRACE": "full"
+	},
 
 	// Configure tool-specific properties.
 	"customizations": {

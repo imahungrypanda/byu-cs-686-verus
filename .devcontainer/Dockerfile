@@ -47,6 +47,8 @@ ENV PATH="/home/vscode/.cargo/bin:${PATH}"
 # Build Verus
 RUN git clone --recurse-submodules https://github.com/verus-lang/verus /home/vscode/verus && \
     bash -l -c "cd /home/vscode/verus/source && source ../tools/activate && vargo build --release"
+ENV VERUSROOT="/home/vscode/verus"
+ENV PATH="/home/vscode/verus/source/target-verus/release:${PATH}"
 
 # Clone Verus Analyzer
 RUN git clone --recursive https://github.com/verus-lang/verus-analyzer /home/vscode/verus-analyzer
@@ -71,6 +73,3 @@ RUN ARCH=$(uname -m) && \
     npx vsce package \
         -o "../../dist/verus-analyzer-${OUT_ARCH}.vsix" \
         --target "$VSCE_TARGET"
-
-# Final PATH update (for terminal use of analyzer)
-ENV PATH="/home/vscode/.cargo/bin:${PATH}"
