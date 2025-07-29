@@ -27,7 +27,7 @@ verus! {
 } // verus!
 
 fn main() {
-    println!("Hello world!");
+    println!("Hello world! And goodbye.");
     foo();
 }
 
