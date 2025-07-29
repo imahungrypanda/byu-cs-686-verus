@@ -35,7 +35,10 @@
         "vscode": {
             "settings": {
                 "verus-analyzer.verus.verusBinary": "/home/vscode/verus/source/target-verus/release/verus"
-            }
+            },
+            "extensions": [
+                "streetsidesoftware.code-spell-checker"
+            ]
         }
     },
 
