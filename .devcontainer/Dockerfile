@@ -44,6 +44,9 @@ ENV VERUS_Z3_PATH="/usr/bin/z3"
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
 ENV PATH="/home/vscode/.cargo/bin:${PATH}"
 
+# Install Verusfmt
+RUN cargo install verusfmt
+
 # Build Verus
 RUN git clone --recurse-submodules https://github.com/verus-lang/verus /home/vscode/verus && \
     bash -l -c "cd /home/vscode/verus/source && source ../tools/activate && vargo build --release"
@@ -69,7 +72,20 @@ RUN ARCH=$(uname -m) && \
       aarch64) VSCE_TARGET="linux-arm64"; OUT_ARCH="aarch64-unknown-linux-gnu" ;; \
       *) echo "Unsupported architecture: $ARCH" && exit 1 ;; \
     esac && \
-    echo "🏗 Building for $VSCE_TARGET" && \ 
+    echo "🏗 Building for $VSCE_TARGET" && \
     npx vsce package \
         -o "../../dist/verus-analyzer-${OUT_ARCH}.vsix" \
         --target "$VSCE_TARGET"
+
+# Install pip and pre-commit
+USER root
+RUN apt-get update && apt-get install -y python3-pip python3.13-venv
+
+USER vscode
+ENV PRECOMMIT_VENV=/home/vscode/.precommit-venv
+RUN python3 -m venv $PRECOMMIT_VENV && \
+    $PRECOMMIT_VENV/bin/pip install --upgrade pip && \
+    $PRECOMMIT_VENV/bin/pip install pre-commit
+
+# Add to PATH so pre-commit is available
+ENV PATH="${PRECOMMIT_VENV}/bin:${PATH}"

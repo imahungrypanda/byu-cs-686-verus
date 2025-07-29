@@ -1,0 +1,29 @@
+repos:
+  # Remove CRLFs and tabs (except in ANTLR output)
+  - repo: https://github.com/Lucas-C/pre-commit-hooks
+    rev: v1.5.5
+    hooks:
+      - id: remove-crlf
+        exclude: ^src/bpmncwpverify/antlr
+      - id: remove-tabs
+        exclude: ^src/bpmncwpverify/antlr
+
+  # Common code hygiene checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^src/bpmncwpverify/antlr
+      - id: end-of-file-fixer
+        exclude: ^src/bpmncwpverify/antlr
+      - id: check-yaml
+      - id: check-added-large-files
+
+  # Verusfmt: format staged Rust files
+  - repo: local
+    hooks:
+      - id: verusfmt
+        name: Format Rust files with verusfmt
+        entry: bash .pre-commit-hooks/verusfmt.sh
+        language: system
+        types: [rust]

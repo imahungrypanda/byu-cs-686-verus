@@ -11,3 +11,14 @@ else
   echo "❌ VSIX file not found at expected path: $VSIX_PATH"
   exit 1
 fi
+
+# Install pre-commit Git hook if config is present
+PROJECT_DIR="/workspaces/byu-cs-686-verus"
+cd "$PROJECT_DIR"
+
+if [[ -f ".pre-commit-config.yaml" ]]; then
+  echo "🔧 Installing pre-commit Git hook..."
+  pre-commit install
+else
+  echo "⚠️  Skipping pre-commit install: .pre-commit-config.yaml not found in $PROJECT_DIR"
+fi
