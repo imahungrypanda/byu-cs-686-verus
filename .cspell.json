@@ -1,0 +1,15 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "ignorePaths": [
+    "src/*",
+    "verify.sh"
+  ],
+  "words": [
+    "rlimit",
+    "rustc",
+    "verus",
+    "verusfmt",
+    "vstd"
+  ]
+}
