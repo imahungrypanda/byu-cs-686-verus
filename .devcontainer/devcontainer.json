@@ -34,10 +34,7 @@
     "customizations": {
         "vscode": {
             "settings": {
-                "verus-analyzer.verus.verusBinary": "/home/vscode/verus/source/target-verus/release/verus",
-                "verus-analyzer.verusExtraArgs": [
-                    "--rlimit", "60.0"
-                ]
+                "verus-analyzer.verus.verusBinary": "/home/vscode/verus/source/target-verus/release/verus"
             },
             "extensions": [
                 "streetsidesoftware.code-spell-checker"

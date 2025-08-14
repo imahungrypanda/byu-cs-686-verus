@@ -47,14 +47,18 @@ ENV PATH="/home/vscode/.cargo/bin:${PATH}"
 # Install Verusfmt
 RUN cargo install verusfmt
 
-# Build Verus
-RUN git clone --recurse-submodules https://github.com/verus-lang/verus /home/vscode/verus && \
-    bash -l -c "cd /home/vscode/verus/source && source ../tools/activate && vargo build --release"
+# Build Verus and vstd
+RUN rm -rf /home/vscode/verus && \
+    git clone --recurse-submodules https://github.com/verus-lang/verus /home/vscode/verus
+
+RUN bash -l -c "cd /home/vscode/verus/source && source ../tools/activate && vargo build --release"
+
 ENV VERUSROOT="/home/vscode/verus"
 ENV PATH="/home/vscode/verus/source/target-verus/release:${PATH}"
 
 # Clone Verus Analyzer
-RUN git clone --recursive https://github.com/verus-lang/verus-analyzer /home/vscode/verus-analyzer
+RUN rm -rf /home/vscode/verus-analyzer && \
+    git clone --recursive https://github.com/verus-lang/verus-analyzer /home/vscode/verus-analyzer
 
 # Install local JS dependencies for the VS Code extension
 WORKDIR /home/vscode/verus-analyzer/editors/code
