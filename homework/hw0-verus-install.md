@@ -1,28 +1,26 @@
 # Homework 0
 
-The [Verus overview](https://verus-lang.github.io/verus/guide/overview.html) is the starting point for the course. This homework is to complete [Getting Started](https://verus-lang.github.io/verus/guide/getting_started.html). The homework is complete when Verus is running on your system.
+ The [Verus overview](https://verus-lang.github.io/verus/guide/overview.html) is the _text_ for the course. This homework covers [1. Getting Started](https://verus-lang.github.io/verus/guide/getting_started.html) and [2. Using Verus within Rust](https://verus-lang.github.io/verus/guide/verus_macro_intro.html).
 
-## Problem 0: install verus
+## Problems
 
-Follow [Getting Started on the command line](https://verus-lang.github.io/verus/guide/getting_started_cmd_line.html) to install `verus` for your system. Submit the following for this problem:
+1. Install verus: follow [Getting Started on the command line](https://verus-lang.github.io/verus/guide/getting_started_cmd_line.html) to install `verus` for your system. Submit the following for this problem:
 
-1. A screen shot showing step 2 complete for verified `getting_started.rs`
-1. A screen shot showing step 2 complete for the modified `getting_started.rs` that doesn't verify
-1. A screen shot showing step 3 complete
+    1. A screen shot showing step 2 complete for verified `getting_started.rs`
+    1. A screen shot showing step 2 complete for the modified `getting_started.rs` that doesn't verify
+    1. A screen shot showing step 3 complete
 
-## Problem 1: configure verus and VSCode
-
-Follow [Getting Started with VSCode](https://verus-lang.github.io/verus/guide/getting_started_vscode.html) to install `verus-analyzer` for your system. Submit a screenshot of the `main.rs` file showing the failing assertion.
+1. Configure `verus-analyzer`: follow [Getting Started with VSCode](https://verus-lang.github.io/verus/guide/getting_started_vscode.html) to install `verus-analyzer` for your system. Submit a screenshot of the `main.rs` file showing the failing assertion.
 
 ## Docker Shortcut?
 
-If you have [Docker](https://www.docker.com) installed on your system and the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) `vscode` extension also on your system, then this homework is most easily completed by opening a workspace with the provided container definition found in `.devcontainer/devcontainer.json`. "Most easily" assumes that _the container builds successfully_. Your mileage may vary as the container reclones `verus` and `verus-analyzer` both of which may introduce breaking changes. My last rebuild was August 12.
+If you have [Docker](https://www.docker.com) installed on your system and the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) `vscode` extension also on your system, then this homework is most easily completed by opening a workspace with the provided container definition found in `.devcontainer/devcontainer.json`. "Most easily" assumes that _the container builds successfully_. Your mileage may vary as the container nukes and then clones `verus` and `verus-analyzer` both of which may introduce breaking changes. My last rebuild was August 12.
 
 To use the Docker container, open `Command Pallette` with `View -> Command Pallette` and then type _Dev Containers: Reopen in Container_. In general, if you have the `Dev Containers` extension installed, then when you open the `byu-cs-686-verus` directory in `vscode` it will prompt if you want to _Reopen in Container_. Choose yes. And then wait because it takes a long time to build [z3](https://github.com/Z3Prover/z3). You can watch the log if you get bored. Be patient. You may run out of resources on Docker, and if that happens, then try `docker builder prune --all --force` to free up space.
 
 When the container is done, it has a last step to install the `verus-analyzer` extension. In a `vscode` terminal, run `bash .devcontainer/post-create.sh`. It should complete with no errors. At that point, `verus` should be available on the command line to complete problem 0, and the extensions should be active to complete problem 1.
 
-### Other niceties
+### Other Niceties from Docker
 
 The container configures the project so that not only does `verus-analyzer` work out of the box but so does `cargo build`, `cargo test`, etc. **WARNING**: `cargo-verus` (also known as `cargo verus`) does not work as of August 13 in the custom build as it fails to find the builtin crate. Prefer using `verus` (i.e., `verus src/main`).
 
