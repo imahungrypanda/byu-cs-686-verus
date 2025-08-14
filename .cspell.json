@@ -6,8 +6,11 @@
     "verify.sh"
   ],
   "words": [
+    "isize",
+    "println",
     "rlimit",
     "rustc",
+    "usize",
     "verus",
     "verusfmt",
     "vstd"
