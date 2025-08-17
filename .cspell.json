@@ -6,6 +6,8 @@
     "verify.sh"
   ],
   "words": [
+    "Dafny",
+    "Hoare",
     "isize",
     "println",
     "rlimit",
