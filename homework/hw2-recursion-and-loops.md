@@ -4,13 +4,15 @@ Chapter [4. Recursion and loops](https://verus-lang.github.io/verus/guide/recurs
 
 # Problems
 
+Most of the proofs can be completed with `nonlinear_arith` mode with the exception of the proofs for `gcd`: `proof fn f(..) by (nonlinear_arith)` -- see [Section 11.2 Integers and nonlinear arithmetic](https://verus-lang.github.io/verus/guide/nonlinear.html). I have listed the required lemmas for each problem, including `gcd`, if you want to not use `nonlinear_arith` in your proofs.
+
 ## Problem 1: factorial
 
 Write a complete specification and implementation for `factorial` following the pattern for `triangle` in chapter [4. Recursion and Loops](https://verus-lang.github.io/verus/guide/recursion_loops.html).
 
 1. Write a recursive specification for `factorial`.
 1. Prove that `factorial(n) >= 1`
-1. Prove that `factorial` is monotonic meaning that `i <= j ==> factorial(i) <= factorial(j)`. For this proof, you will need to use `vstd::arithmetic::mul::lemma_mul_inequality` after the recursive call in the proof.
+1. Prove that `factorial` is monotonic meaning that `i <= j ==> factorial(i) <= factorial(j)`. If you want to not use `nonlinear_arith` then you will need to use `vstd::arithmetic::mul::lemma_mul_inequality` directly after the recursive call in the proof.
 1. Write a recursive implementation of `factorial` that always returns the same value as `factorial` when `factorial(n as nat) <= usize::MAX`. You will need the monotonic lemma from the previous step just as was required for `triangle` in order for Verus to reason about overflow and underflow.
 1. Write an iterative implementation of `factorial` that always returns the same value as `factorial` when `factorial(n as nat) <= usize::MAX`. You will need the monotonic lemma again and the invariant needs to bound variable used for iteration.
 
@@ -26,9 +28,8 @@ Hints:
 Repeat the same pattern as before only this time for the sum of `n` natural numbers, `sum_to_n`, and prove that `n * (n + 1) / 2 == sum_to_n(n)`. Things that you will need along the way:
 
 * `lemma_sum_to_n_is_monotonic` (easy to write and trivial to prove -- `verus` doesn't need any help)
-* `vstd::arithmetic::mul::lemma_mul_is_commutative` for the proof that `sum_to_n(n)` is equal to `n * (n + 1) / 2`
-* `vstd::arithmetic::mul::lemma_mul_is_distributive_add` for the proof that `sum_to_n(n)` is equal to `n * (n + 1) / 2`. I used it to prove `assert(n * (n - 1) + n + n == n * ((n - 1) + 2))`.
-
+* `vstd::arithmetic::mul::lemma_mul_is_commutative` for the proof that `sum_to_n(n)` is equal to `n * (n + 1) / 2` if not using `nonlinear_arith` mode.
+* `vstd::arithmetic::mul::lemma_mul_is_distributive_add` for the proof that `sum_to_n(n)` is equal to `n * (n + 1) / 2`. I used it to prove `assert(n * (n - 1) + n + n == n * ((n - 1) + 2))` if not using the `nonlinear_arith` mode.
 
 ## Problem 3: greatest common divisor (gcd)
 
@@ -49,7 +50,7 @@ proof fn lemma_gcd_divides(a: nat, b: nat)
         b % gcd(a, b) == 0,
 ```
 
-The proof for `lemma_gcd_divides` will need the following:
+The proof for `lemma_gcd_divides` will need the following as `nonlinear_arith` mode is not enough:
 
 * `lemma_gcd_positive`
 * `vstd::arithmetic::div_mod::lemma_fundamental_div_mod`
