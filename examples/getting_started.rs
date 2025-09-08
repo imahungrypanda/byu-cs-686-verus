@@ -1,16 +1,21 @@
-#![allow(unused_imports)]
-
 use vstd::prelude::*;
 
 verus! {
-    pub exec fn inc(x: u64) -> (y: u64)
-        requires x < u64::MAX
-        ensures y == x + 1
-    {
-        x + 1
+
+spec fn min(x: int, y: int) -> int {
+    if x <= y {
+        x
+    } else {
+        y
     }
 }
 
 fn main() {
-    println!("Hello, Verus!");
+    assert(min(10, 20) == 10);
+    assert(min(-10, -20) == -20);
+    assert(forall|i: int, j: int| min(i, j) <= i && min(i, j) <= j);
+    assert(forall|i: int, j: int| min(i, j) == i || min(i, j) == j);
+    assert(forall|i: int, j: int| min(i, j) == min(j, i));
 }
+
+} // verus!
