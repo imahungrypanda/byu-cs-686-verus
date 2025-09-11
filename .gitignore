@@ -21,3 +21,11 @@ target
 #.idea/
 
 .DS_Store
+
+verus
+
+vstd
+
+.cargo/
+
+getting_started

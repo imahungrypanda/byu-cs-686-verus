@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-vstd = { path = "/home/vscode/verus/source/vstd" }
+# No dependencies for cargo builds - this is a Verus-only project
 
 [package.metadata.verus]
 verify = true
