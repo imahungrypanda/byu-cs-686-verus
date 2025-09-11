@@ -1,22 +1,31 @@
+// Import all homework modules
+mod hw0;
+mod hw1;
+mod hw2;
+mod hw3;
+mod hw4;
+
 use vstd::prelude::*;
 
 verus! {
 
-spec fn min(x: int, y: int) -> int {
-    if x <= y {
-        x
-    } else {
-        y
-    }
-}
+
 
 fn main() {
-    assert(min(10, 20) == 10);
-    assert(min(-10, -20) == -20);
-    assert(forall|i: int, j: int| min(i, j) <= i && min(i, j) <= j);
-    assert(forall|i: int, j: int| min(i, j) == i || min(i, j) == j);
-    assert(forall|i: int, j: int| min(i, j) == min(j, i));
-    assert(forall|i: int, j: int| min(i, j) == min(i, i));
+
+    hw0::run_examples();
+
+    // Run homework 1 examples
+    // hw1::run_examples();
+
+    // Run homework 2 examples (when implemented)
+    // hw2::run_examples();
+
+    // Run homework 3 examples (when implemented)
+    // hw3::run_examples();
+
+    // Run homework 4 examples (when implemented)
+    // hw4::run_examples();
 }
 
 } // verus!
