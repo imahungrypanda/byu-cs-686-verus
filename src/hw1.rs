@@ -128,4 +128,80 @@ verus! {
             assert(result9 == result10);
         }
     }
+
+    pub mod problem3 {
+        use super::*;
+
+        spec fn spec_median(a: i32, b: i32, c: i32) -> (result: i32) {
+            b
+        }
+
+        exec fn median(a: i32, b: i32, c: i32) -> (result: i32)
+            requires
+                a <= b && b <= c,
+            ensures
+                result == spec_median(a, b, c),
+        {
+            return b
+        }
+
+        spec fn spec_median_of_medians(a: i32, b: i32, c: i32, d: i32, e: i32) -> (result: i32)
+        {
+            let median1 = spec_median(a, b, c);
+            let median2 = spec_median(c, d, e);
+            if median1 == c {
+                median2
+            } else {
+                median1
+            }
+        }
+
+        exec fn median_of_medians(a: i32, b: i32, c: i32, d: i32, e: i32) -> (result: i32)
+            requires
+                a <= b <= c < d <= e,
+            ensures
+                result == spec_median_of_medians(a, b, c, d, e),
+                result != c,
+        {
+            let median1 = median(a, b, c);
+            let median2 = median(c, d, e);
+
+            let result = if median1 == c {
+                median2
+            } else {
+                median1
+            };
+
+            assert(result != c) by {
+                lemma_median_of_medians(a, b, c, d, e);
+            }
+            return result
+        }
+
+        proof fn lemma_median_of_medians(a: i32, b: i32, c: i32, d: i32, e: i32)
+            requires
+                a <= b <= c < d <= e,
+                !(b == c == d), // I don't think this is right. It defeats the purpose of the line before
+            ensures
+                (spec_median_of_medians(a, b, c, d, e) == d || spec_median_of_medians(a, b, c, d, e) == b),
+        {
+            let median1 = spec_median(a, b, c);
+            assert(median1 == b);
+            let median2 = spec_median(c, d, e);
+            assert(median2 == d);
+            let median3 = if median1 == c {
+                median2
+            } else {
+                median1
+            };
+            assert(median3 == b || median3 == d);
+        }
+
+        pub fn run_examples() {
+            assert(spec_median_of_medians(1, 2, 3, 4, 5) == 2);
+            assert(spec_median_of_medians(1, 2, 3, 3, 5) == 2);
+            assert(spec_median_of_medians(1, 3, 3, 4, 5) == 4);
+        }
+    }
+
 } // verus!
