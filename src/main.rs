@@ -4,6 +4,7 @@ mod hw1;
 mod hw2;
 mod hw3;
 mod hw4;
+mod example_1;
 
 use vstd::prelude::*;
 
@@ -16,7 +17,7 @@ fn main() {
     hw0::run_examples();
 
     // Run homework 1 examples
-    // hw1::run_examples();
+    hw1::run_examples();
 
     // Run homework 2 examples (when implemented)
     // hw2::run_examples();
@@ -26,6 +27,9 @@ fn main() {
 
     // Run homework 4 examples (when implemented)
     // hw4::run_examples();
+
+    // Run reading 1 examples
+    example_1::run_examples();
 }
 
 } // verus!
