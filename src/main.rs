@@ -18,6 +18,7 @@ fn main() {
 
     // Run homework 1 examples
     hw1::problem1::run_examples();
+    hw1::problem2::run_examples();
 
     // Run homework 2 examples (when implemented)
     // hw2::run_examples();

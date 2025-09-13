@@ -64,4 +64,68 @@ verus! {
             assert(result == spec_is_in_range_by_step(-5, -10, 10, 2));
         }
     }
+
+    // NOTE: I have no idea why but this problem confuses me a lot. I know I got it to pass but I don't know why.
+    pub mod problem2 {
+        use super::*;
+
+        spec fn abs(x: int) -> (result: nat) {
+            if x >= 0 {
+                x as nat
+            } else {
+                -x as nat
+            }
+        }
+
+        spec fn spec_absolute_difference(x: int, y: int) -> (result: nat) {
+            let result = if x >= y {
+                x - y
+            } else {
+                y - x
+            };
+
+            abs(result)
+        }
+
+        exec fn absolute_difference(x: i32, y: i32) -> (result: u32)
+            ensures
+                result == spec_absolute_difference(x as int, y as int),
+        {
+            if x >= y {
+                (x as i64 - y as i64) as u32
+            } else {
+                (y as i64 - x as i64) as u32
+            }
+        }
+
+        pub fn run_examples() {
+            assert(spec_absolute_difference(10, 20) == 10);
+            assert(spec_absolute_difference(20, 10) == 10);
+            assert(spec_absolute_difference(10, 10) == 0);
+            assert(spec_absolute_difference(-10, 20) == 30);
+            assert(spec_absolute_difference(20, -10) == 30);
+            assert(spec_absolute_difference(-10, -20) == 10);
+            assert(spec_absolute_difference(-20, -10) == 10);
+
+            let result1 = absolute_difference(10, 20);
+            let result2 = absolute_difference(20, 10);
+            assert(result1 == result2);
+
+            let result3 = absolute_difference(-10, 20);
+            let result4 = absolute_difference(20, -10);
+            assert(result3 == result4);
+
+            let result5 = absolute_difference(-10, -20);
+            let result6 = absolute_difference(-20, -10);
+            assert(result5 == result6);
+
+            let result7 = absolute_difference(10, 10);
+            let result8 = absolute_difference(10, 10);
+            assert(result7 == result8);
+
+            let result9 = absolute_difference(10, -10);
+            let result10 = absolute_difference(-10, 10);
+            assert(result9 == result10);
+        }
+    }
 } // verus!
