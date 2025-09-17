@@ -4,8 +4,9 @@ mod hw1;
 mod hw2;
 mod hw3;
 mod hw4;
-mod example_1;
 
+mod example_1;
+mod mult;
 use vstd::prelude::*;
 
 verus! {
@@ -31,6 +32,7 @@ fn main() {
 
     // Run reading 1 examples
     example_1::run_examples();
+    mult::run_examples();
 }
 
 } // verus!
