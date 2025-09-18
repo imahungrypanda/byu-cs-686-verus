@@ -1,12 +1,12 @@
 // Import all homework modules
 mod hw0;
-mod hw1;
+mod hw1_basic_specifications;
 mod hw2;
 mod hw3;
 mod hw4;
 
 mod example_1;
-mod mult;
+mod class;
 use vstd::prelude::*;
 
 verus! {
@@ -18,8 +18,8 @@ fn main() {
     hw0::run_examples();
 
     // Run homework 1 examples
-    hw1::problem1::run_examples();
-    hw1::problem2::run_examples();
+    hw1_basic_specifications::problem1::run_examples();
+    hw1_basic_specifications::problem2::run_examples();
 
     // Run homework 2 examples (when implemented)
     // hw2::run_examples();
@@ -32,7 +32,9 @@ fn main() {
 
     // Run reading 1 examples
     example_1::run_examples();
-    mult::run_examples();
+    class::mult::run_examples();
+
+    class::binary_search_class::run_examples();
 }
 
 } // verus!
