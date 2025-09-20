@@ -11,6 +11,9 @@
 - SMT guidance:
   - triggers: <notes>
   - reveal/opaque: <notes>
+  - by (nonlinear_arith): Use for multiplication/division inequalities (e.g., n \* x >= 1)
+  - by (compute): Use for arithmetic that can be computed directly
+  - by (bit_vector): Use for bitwise operations
 - Termination: <decreases clause / argument>
 - Edge cases: <list>
 - Open questions / follow-ups: <list>
