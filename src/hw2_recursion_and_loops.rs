@@ -81,6 +81,34 @@ pub mod problem1 {
         }
     }
 
+    exec fn factorial_iter_impl(n: usize) -> (result: usize)
+        requires
+            0 <= n <= usize::MAX,
+            factorial_spec(n as nat) <= usize::MAX,
+        ensures
+            result == factorial_spec(n as nat),
+    {
+        let mut result: usize = 1;
+        let mut i: usize = 0;
+
+        while i < n
+            invariant
+                0 <= i <= n,
+                result == factorial_spec(i as nat),
+                factorial_spec(n as nat) <= usize::MAX,
+            decreases n - i,
+        {
+            assert(result * (i + 1) <= usize::MAX) by {
+                factorial_monotonic((i + 1) as nat, n as nat);
+            }
+
+            i = i + 1;
+            result = result * i;
+        }
+
+        result
+    }
+
     pub fn run_examples() {
         assert(factorial_spec(0) == 1);
         assert(factorial_spec(1) == 1);
