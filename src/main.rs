@@ -27,6 +27,7 @@ fn main() {
 
     // Run homework 2 examples (when implemented)
     hw2_recursion_and_loops::problem1::run_examples();
+    hw2_recursion_and_loops::problem1::test_factorial_implementation();
     hw2_recursion_and_loops::problem2::run_examples();
     hw2_recursion_and_loops::problem3::run_examples();
 

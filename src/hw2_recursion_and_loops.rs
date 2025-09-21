@@ -25,11 +25,59 @@ pub mod problem1 {
         decreases n,
     {
         if n == 0 {
-            // Base case: factorial(0) = 1
         } else {
-            // Inductive case: assume factorial(n-1) >= 1
             let m = (n - 1) as nat;
             factorial_proof(m);
+        }
+    }
+
+    // Prove that factorial is monotonic: i <= j ==> factorial(i) <= factorial(j)
+    proof fn factorial_monotonic(i: nat, j: nat)
+        by (nonlinear_arith)
+        ensures
+            i <= j ==> factorial_spec(i) <= factorial_spec(j),
+        decreases j,
+    {
+        if j == 0 {
+            // Base case: j == 0, so i must also be 0
+        } else {
+            // Inductive case: assume the property holds for j-1
+            factorial_monotonic(i, (j - 1) as nat);
+        }
+    }
+
+    exec fn factorial_rec_impl(n: usize) -> (result: usize)
+        requires
+            0 <= n <= usize::MAX,
+            factorial_spec(n as nat) <= usize::MAX,
+        ensures
+            result == factorial_spec(n as nat),
+        decreases n,
+    {
+        if n == 0 {
+            1
+        } else {
+            assert(factorial_spec((n - 1) as nat) <= usize::MAX) by {
+                factorial_monotonic((n - 1) as nat, n as nat);
+            }
+
+            let recursive_result = factorial_rec_impl(n - 1);
+
+            assert(recursive_result == factorial_spec((n - 1) as nat));
+            assert(n * recursive_result <= usize::MAX) by {
+                broadcast use vstd::arithmetic::mul::group_mul_is_commutative_and_distributive;
+            }
+            let result: usize = n * recursive_result;
+
+            assert(recursive_result == factorial_spec((n - 1) as nat));
+            assert(n * recursive_result == n * factorial_spec((n - 1) as nat));
+            assert(factorial_spec((n - 1) as nat) * n == factorial_spec(n as nat));
+            assert(n * recursive_result == factorial_spec((n - 1) as nat) * n) by {
+                broadcast use vstd::arithmetic::mul::group_mul_is_commutative_and_distributive;
+            };
+            assert(result == factorial_spec(n as nat));
+
+            result
         }
     }
 
@@ -45,6 +93,22 @@ pub mod problem1 {
         assert(factorial_spec(8) == 40320);
         assert(factorial_spec(9) == 362880);
         assert(factorial_spec(10) == 3628800);
+    }
+
+    pub exec fn test_factorial_implementation() {
+        let result0 = factorial_rec_impl(0);
+        let result1 = factorial_rec_impl(1);
+        let result2 = factorial_rec_impl(2);
+        let result3 = factorial_rec_impl(3);
+        let result4 = factorial_rec_impl(4);
+        let result5 = factorial_rec_impl(5);
+
+        assert(result0 == 1);
+        assert(result1 == 1);
+        assert(result2 == 2);
+        assert(result3 == 6);
+        assert(result4 == 24);
+        assert(result5 == 120);
     }
 }
 
