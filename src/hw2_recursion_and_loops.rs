@@ -141,9 +141,112 @@ pub mod problem1 {
 }
 
 pub mod problem2 {
+    use super::*;
+
+    // Sum to n spec
+    spec fn sum_to_n_spec(n: nat) -> nat
+        decreases
+            n
+    {
+        if n == 0 {
+            0
+        } else {
+            let m = (n - 1) as nat;
+            sum_to_n_spec(m) + n
+        }
+    }
+
+    // Prove that sum_to_n(n) >= 0
+    proof fn sum_to_n_proof(n: nat)
+        by (nonlinear_arith)
+        ensures
+            sum_to_n_spec(n) >= 0,
+        decreases n,
+    {
+        if n == 0 {
+        } else {
+            let m = (n - 1) as nat;
+            sum_to_n_proof(m);
+        }
+    }
+
+    // Prove that sum_to_n is monotonic: i <= j ==> sum_to_n(i) <= sum_to_n(j)
+    proof fn sum_to_n_monotonic(i: nat, j: nat)
+        by (nonlinear_arith)
+        ensures
+            i <= j ==> sum_to_n_spec(i) <= sum_to_n_spec(j),
+        decreases j,
+    {
+        if j == 0 {
+        } else {
+            sum_to_n_monotonic(i, (j - 1) as nat);
+        }
+    }
+
+    // Recursive implementation of sum_to_n
+    exec fn sum_to_n_rec_impl(n: usize) -> (result: usize)
+        requires
+            0 <= n <= usize::MAX,
+            sum_to_n_spec(n as nat) <= usize::MAX,
+        ensures
+            result == sum_to_n_spec(n as nat),
+        decreases n,
+    {
+        if n == 0 {
+            0
+        } else {
+            let recursive_result = sum_to_n_rec_impl(n - 1);
+            n + recursive_result
+        }
+    }
+
+    // Iterative implementation of sum_to_n
+    exec fn sum_to_n_iter_impl(n: usize) -> (result: usize)
+        requires
+            0 <= n <= usize::MAX,
+            sum_to_n_spec(n as nat) <= usize::MAX,
+        ensures
+            result == sum_to_n_spec(n as nat),
+    {
+        let mut result: usize = 0;
+        let mut i: usize = 0;
+
+        while i < n
+            invariant
+                0 <= i <= n,
+                result == sum_to_n_spec(i as nat),
+                sum_to_n_spec(n as nat) <= usize::MAX,
+            decreases n - i,
+        {
+            assert(result + (i + 1) <= usize::MAX) by {
+                assert(result == sum_to_n_spec(i as nat));
+                assert(sum_to_n_spec(i as nat) + (i + 1) == sum_to_n_spec((i + 1) as nat));
+                sum_to_n_monotonic((i + 1) as nat, n as nat);
+            }
+            i = i + 1;
+            result = result + i;
+        }
+
+        result
+    }
+
+    #[test]
+    fn test_sum_to_n_implementation() {
+        assert_eq!(sum_to_n_rec_impl(0), 0);
+        assert_eq!(sum_to_n_rec_impl(1), 1);
+        assert_eq!(sum_to_n_rec_impl(2), 3);
+        assert_eq!(sum_to_n_rec_impl(3), 6);
+        assert_eq!(sum_to_n_rec_impl(4), 10);
+        assert_eq!(sum_to_n_rec_impl(5), 15);
+    }
 
     pub fn run_examples() {
-        assert(true);
+        assert(sum_to_n_spec(0) == 0);
+        assert(sum_to_n_spec(1) == 1);
+        assert(sum_to_n_spec(2) == 3);
+        assert(sum_to_n_spec(3) == 6);
+        assert(sum_to_n_spec(4) == 10);
+        assert(sum_to_n_spec(5) == 15);
     }
 }
 
