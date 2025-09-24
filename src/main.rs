@@ -6,14 +6,14 @@ mod hw3;
 mod hw4;
 
 mod example_1;
-// mod class;
+mod class;
 use vstd::prelude::*;
 
 verus! {
 
 fn class_run_examples() {
     // class::mult::run_examples();
-    // class::binary_search_class::run_examples();
+    class::binary_search_class::run_examples();
 }
 
 fn main() {
