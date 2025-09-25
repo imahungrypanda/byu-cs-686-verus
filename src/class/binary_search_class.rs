@@ -82,7 +82,7 @@ verus! {
     if low == high {
       let s_low: Seq<int> = s.subrange(0, low);
       let s_high: Seq<int> = s.subrange(high, s.len() as int);
-      assert(s =~= s_low + s_high); // This is expo-something that is in the reading TODO: Look this up
+      assert(s =~= s_low + s_high);
     } else {
       let mid: int = low + (high - low) / 2;
 
@@ -94,7 +94,6 @@ verus! {
     }
   }
 
-  // What is an inductive proof?
   proof fn binary_search_ensures(x: int, s: Seq<int>)
     requires
       is_sorted(s),
