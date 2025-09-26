@@ -264,12 +264,21 @@ pub mod problem3 {
         }
     }
 
-    // proof fn lemma_gcd_positive(a: nat, b: nat)
-    //     requires
-    //         !(a == 0 && b == 0),
-    //     ensures
-    //         0 < gcd(a, b),
-    // {}
+    proof fn lemma_gcd_positive(a: nat, b: nat)
+        requires
+            !(a == 0 && b == 0),
+        ensures
+            0 < gcd(a, b),
+        decreases
+            a,
+    {
+        if a == 0 {
+            assert(b > 0);
+        } else {
+            assert(b % a < a);
+            lemma_gcd_positive(b % a, a);
+        }
+    }
 
     // proof fn lemma_gcd_divides(a: nat, b: nat)
     //     requires
