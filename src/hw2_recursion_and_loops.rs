@@ -251,9 +251,88 @@ pub mod problem2 {
 }
 
 pub mod problem3 {
+    use super::*;
+
+    spec fn gcd(a: nat, b: nat) -> nat
+        decreases
+            a
+    {
+        if a == 0 {
+            b
+        } else {
+            gcd(b % a, a)
+        }
+    }
+
+    // proof fn lemma_gcd_positive(a: nat, b: nat)
+    //     requires
+    //         !(a == 0 && b == 0),
+    //     ensures
+    //         0 < gcd(a, b),
+    // {}
+
+    // proof fn lemma_gcd_divides(a: nat, b: nat)
+    //     requires
+    //         !(a == 0 && b == 0),
+    //     ensures
+    //         a % gcd(a, b) == 0,
+    //         b % gcd(a, b) == 0,
+    // {}
+
+    proof fn lemma_mod_mul_zero(x: int, q: int, m: int)
+    requires
+        m > 0,
+        x % m == 0,
+    // ensures
+    //     (x * q) % m == 0,
+    {
+        assume(true);
+        // lemma_fundamental_div_mod(x, m);
+        // lemma_mul_is_associative(m, (x / m), q);
+        // lemma_mod_multiples_basic((x / m) * q, m);
+    }
 
     pub fn run_examples() {
-        assert(true);
+        // Basic cases
+        assert(gcd(0, 0) == 0);
+        assert(gcd(0, 1) == 1);
+        assert(gcd(1, 0) == 1);
+        assert(gcd(1, 1) == 1);
+        assert(gcd(1, 2) == 1);
+        assert(gcd(2, 1) == 1);
+
+        // Bigger examples - demonstrate the algorithm with larger numbers
+        assert(gcd(48, 18) == 6) by {
+            reveal_with_fuel(gcd, 10);
+        };
+        // assert(gcd(100, 20) == 20);
+        // assert(gcd(252, 105) == 21);
+        // assert(gcd(1071, 462) == 21);
+        // assert(gcd(123456, 7890) == 6);
+        // assert(gcd(987654321, 123456789) == 9);
+
+        // // Edge cases with larger numbers
+        // assert(gcd(1000000, 1) == 1);
+        // assert(gcd(1, 1000000) == 1);
+        // assert(gcd(1000000, 1000000) == 1000000);
+        // assert(gcd(0, 1000000) == 1000000);
+        // assert(gcd(1000000, 0) == 1000000);
+
+        // // Prime numbers (should be 1)
+        // assert(gcd(17, 19) == 1);
+        // assert(gcd(97, 101) == 1);
+        // assert(gcd(1009, 1013) == 1);
+
+        // // Powers of 2
+        // assert(gcd(64, 32) == 32);
+        // assert(gcd(128, 64) == 64);
+        // assert(gcd(1024, 512) == 512);
+
+        // // Fibonacci numbers (consecutive Fibonacci numbers are coprime)
+        // assert(gcd(21, 34) == 1);  // F(8) and F(9)
+        // assert(gcd(34, 55) == 1);  // F(9) and F(10)
+        // assert(gcd(55, 89) == 1);  // F(10) and F(11)
+
     }
 }
 
