@@ -292,13 +292,13 @@ pub mod problem3 {
     requires
         m > 0,
         x % m == 0,
-    // ensures
-    //     (x * q) % m == 0,
+    ensures
+        (x * q) % m == 0,
     {
         assume(true);
-        // lemma_fundamental_div_mod(x, m);
-        // lemma_mul_is_associative(m, (x / m), q);
-        // lemma_mod_multiples_basic((x / m) * q, m);
+        vstd::arithmetic::div_mod::lemma_fundamental_div_mod(x, m);
+        vstd::arithmetic::mul::lemma_mul_is_associative(m, (x / m), q);
+        vstd::arithmetic::div_mod::lemma_mod_multiples_basic((x / m) * q, m);
     }
 
     pub fn run_examples() {
