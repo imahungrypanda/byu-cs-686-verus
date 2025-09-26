@@ -97,6 +97,38 @@ Verus is a static verification toolchain for Rust that proves functional correct
   }
   ```
 
+## vstd Library
+
+The Verus standard library (`vstd`) provides essential utilities and datatypes for proofs and runtime functionality. Key modules include:
+
+### Arithmetic Module (`vstd::arithmetic`)
+
+- **`mul`**: Multiplication properties and lemmas
+  - `lemma_mod_multiples_basic`: Proves multiples of a number are divisible by that number
+  - `lemma_mul_is_commutative`: Commutativity of multiplication
+  - `lemma_mul_is_distributive`: Distributivity of multiplication
+- **`div_mod`**: Division and modulo properties
+  - `lemma_fundamental_div_mod`: Fundamental division property
+  - `lemma_mod_adds`: Modular arithmetic addition properties
+
+### Other Key Modules
+
+- **`seq`**: Mathematical sequences with specifications
+- **`set`**: Mathematical sets with specifications
+- **`map`**: Mathematical maps with specifications
+- **`prelude`**: Common imports and utilities
+
+### Usage Pattern
+
+```rust
+use vstd::arithmetic::mul::lemma_mod_multiples_basic;
+use vstd::arithmetic::div_mod::lemma_fundamental_div_mod;
+```
+
 ## Handy Keywords
 
 `requires`, `ensures`, `returns`, `invariant`, `forall`, `exists`, `assert ... by`, `reveal`, `opaque`, `decreases`, `ghost`, `tracked`, `Seq`, `Set`, `Map`, `recommends`, `subrange`
+
+## External Resources
+
+- [vstd Documentation](https://verus-lang.github.io/verus/verusdoc/vstd/index.html)
