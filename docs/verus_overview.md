@@ -74,6 +74,29 @@ Verus is a static verification toolchain for Rust that proves functional correct
 - **Test proofs**: Use proof functions to verify specifications work correctly
 - **Assertion chaining**: Use `assert ... by { ... }` to chain proof steps
 
+### Recursive Proof Patterns
+
+- **Inductive proofs**: Use `decreases` clause to ensure termination
+- **Base case handling**: Handle the termination condition explicitly
+- **Recursive calls**: Use the proof function recursively with smaller arguments
+- **Key insight**: Show that recursive arguments get smaller (e.g., `b % a < a`)
+- **Example pattern**:
+  ```rust
+  proof fn lemma_property(x: nat)
+      requires precondition,
+      ensures postcondition,
+      decreases x,
+  {
+      if x == 0 {
+          // Base case: prove property directly
+      } else {
+          // Inductive case: show recursive call works
+          assert(smaller_condition);
+          lemma_property(smaller_x);
+      }
+  }
+  ```
+
 ## Handy Keywords
 
 `requires`, `ensures`, `returns`, `invariant`, `forall`, `exists`, `assert ... by`, `reveal`, `opaque`, `decreases`, `ghost`, `tracked`, `Seq`, `Set`, `Map`, `recommends`, `subrange`
