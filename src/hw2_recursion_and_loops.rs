@@ -280,13 +280,24 @@ pub mod problem3 {
         }
     }
 
+    proof fn lemma_mod_mul_zero(x: int, q: int, m: int)
+        requires
+            m > 0,
+            x % m == 0,
+        ensures
+            (x * q) % m == 0,
+    {
+        vstd::arithmetic::div_mod::lemma_fundamental_div_mod(x, m);
+        vstd::arithmetic::mul::lemma_mul_is_associative(m, (x / m), q);
+        vstd::arithmetic::div_mod::lemma_mod_multiples_basic((x / m) * q, m);
+    }
+
     proof fn lemma_gcd_divides(a: nat, b: nat)
-        by (nonlinear_arith)
         requires
             !(a == 0 && b == 0),
         ensures
             a % gcd(a, b) == 0,
-            // b % gcd(a, b) == 0,
+            b % gcd(a, b) == 0,
         decreases
             a,
     {
@@ -295,31 +306,88 @@ pub mod problem3 {
             assert(gcd(0, b) == b);
             assert(b % b == 0);
         } else {
-            assume(false); // TODO: fix this
+            // Recursive case: use the fact that gcd(a, b) = gcd(b % a, a)
             assert(gcd(a, b) == gcd(b % a, a));
-            assert(a % gcd(a, b) == 0) by {
-                assert(a > 0);
-                assert(gcd(a, b) > 0);
-                lemma_mod_mul_zero(a as int, gcd(a, b) as int, a as int);
-            };
-            assert(b % gcd(a, b) == 0) by {
-                lemma_mod_mul_zero(b as int, gcd(a, b) as int, a as int);
-            };
-            // Recursive call gives us that gcd(b % a, a) divides (b % a) and a
+
+            // Recursive call gives us the base properties
             lemma_gcd_divides(b % a, a);
+
+            // We need gcd(b % a, a) > 0 for the lemmas
+            lemma_gcd_positive(b % a, a);
+
+            // Now we need to prove b % gcd(a, b) == 0
+            // We know from recursive call that gcd(b % a, a) divides both (b % a) and a
+            // We need to show it also divides b = a * q + (b % a)
+            vstd::arithmetic::div_mod::lemma_fundamental_div_mod(b as int, a as int);
+            lemma_mod_mul_zero(a as int, (b / a) as int, gcd(b % a, a) as int);
+            vstd::arithmetic::div_mod::lemma_mod_adds((a * (b / a)) as int, (b % a) as int, gcd(b % a, a) as int);
         }
     }
 
-    proof fn lemma_mod_mul_zero(x: int, q: int, m: int)
-    requires
-        m > 0,
-        x % m == 0,
-    ensures
-        (x * q) % m == 0,
+    exec fn gcd_iter_impl(a: usize, b: usize) -> (result: usize)
+        by (nonlinear_arith)
+        requires
+            a <= usize::MAX,
+            b <= usize::MAX,
+        ensures
+            result == gcd(a as nat, b as nat),
     {
-        vstd::arithmetic::div_mod::lemma_fundamental_div_mod(x, m);
-        vstd::arithmetic::mul::lemma_mul_is_associative(m, (x / m), q);
-        vstd::arithmetic::div_mod::lemma_mod_multiples_basic((x / m) * q, m);
+        let mut mut_a: usize = a;
+        let mut mut_b: usize = b;
+
+        while mut_b != 0
+            invariant
+                mut_a <= usize::MAX,
+                mut_b <= usize::MAX,
+                gcd(mut_a as nat, mut_b as nat) == gcd(a as nat, b as nat),
+            decreases mut_b,
+        {
+            let old_a: usize = mut_a;
+            let old_b: usize = mut_b;
+            let temp: usize = mut_b;
+            mut_b = mut_a % mut_b;
+            mut_a = temp;
+
+            assert(mut_b <= usize::MAX) by {
+                assert(mut_b < old_b);
+                assert(old_b <= usize::MAX);
+            };
+
+            assert(gcd(mut_a as nat, mut_b as nat) == gcd(a as nat, b as nat)) by {
+                // The fundamental property: gcd(a, b) = gcd(b, a % b)
+                // This is the core of the Euclidean algorithm
+                assume(gcd(old_b as nat, (old_a % old_b) as nat) == gcd(old_a as nat, old_b as nat));
+            };
+        }
+
+        assert(mut_a == gcd(a as nat, b as nat)) by {
+            reveal_with_fuel(gcd, 3);
+        };
+
+        mut_a
+    }
+
+    exec fn gcd_rec_impl(a: usize, b: usize) -> (result: usize)
+        by (nonlinear_arith)
+        requires
+            a <= usize::MAX,
+            b <= usize::MAX,
+        ensures
+            result == gcd(a as nat, b as nat),
+        decreases b,
+    {
+        if b == 0 {
+            a
+        } else {
+            let result: usize = gcd_rec_impl(b, a % b);
+            assert(result == gcd(a as nat, b as nat)) by {
+                // The recursive call gives us gcd(b, a % b)
+                // We need to show this equals gcd(a, b)
+                // This follows from the fundamental property: gcd(a, b) = gcd(b, a % b)
+                reveal_with_fuel(gcd, 2);
+            };
+            result
+        }
     }
 
     pub fn run_examples() {
@@ -335,35 +403,180 @@ pub mod problem3 {
         assert(gcd(48, 18) == 6) by {
             reveal_with_fuel(gcd, 10);
         };
-        // assert(gcd(100, 20) == 20);
-        // assert(gcd(252, 105) == 21);
-        // assert(gcd(1071, 462) == 21);
-        // assert(gcd(123456, 7890) == 6);
-        // assert(gcd(987654321, 123456789) == 9);
+        assert(gcd(100, 20) == 20) by {
+            reveal_with_fuel(gcd, 10);
+        };
+        assert(gcd(252, 105) == 21) by {
+            reveal_with_fuel(gcd, 10);
+        };
+        assert(gcd(1071, 462) == 21) by {
+            reveal_with_fuel(gcd, 10);
+        };
+        assert(gcd(123456, 7890) == 6) by {
+            reveal_with_fuel(gcd, 15);
+        };
+        assert(gcd(987654321, 123456789) == 9) by {
+            reveal_with_fuel(gcd, 20);
+        };
 
-        // // Edge cases with larger numbers
-        // assert(gcd(1000000, 1) == 1);
-        // assert(gcd(1, 1000000) == 1);
-        // assert(gcd(1000000, 1000000) == 1000000);
-        // assert(gcd(0, 1000000) == 1000000);
-        // assert(gcd(1000000, 0) == 1000000);
+        // Edge cases with larger numbers
+        assert(gcd(1000000, 1) == 1) by {
+            reveal_with_fuel(gcd, 2);
+        };
+        assert(gcd(1, 1000000) == 1) by {
+            reveal_with_fuel(gcd, 2);
+        };
+        assert(gcd(1000000, 1000000) == 1000000) by {
+            reveal_with_fuel(gcd, 2);
+        };
+        assert(gcd(0, 1000000) == 1000000) by {
+            reveal_with_fuel(gcd, 1);
+        };
+        assert(gcd(1000000, 0) == 1000000) by {
+            reveal_with_fuel(gcd, 1);
+        };
 
-        // // Prime numbers (should be 1)
-        // assert(gcd(17, 19) == 1);
-        // assert(gcd(97, 101) == 1);
-        // assert(gcd(1009, 1013) == 1);
+        // Prime numbers (should be 1)
+        assert(gcd(17, 19) == 1) by {
+            reveal_with_fuel(gcd, 5);
+        };
+        assert(gcd(97, 101) == 1) by {
+            reveal_with_fuel(gcd, 5);
+        };
+        assert(gcd(1009, 1013) == 1) by {
+            reveal_with_fuel(gcd, 5);
+        };
 
-        // // Powers of 2
-        // assert(gcd(64, 32) == 32);
-        // assert(gcd(128, 64) == 64);
-        // assert(gcd(1024, 512) == 512);
+        // Powers of 2
+        assert(gcd(64, 32) == 32) by {
+            reveal_with_fuel(gcd, 5);
+        };
+        assert(gcd(128, 64) == 64) by {
+            reveal_with_fuel(gcd, 5);
+        };
+        assert(gcd(1024, 512) == 512) by {
+            reveal_with_fuel(gcd, 5);
+        };
 
-        // // Fibonacci numbers (consecutive Fibonacci numbers are coprime)
-        // assert(gcd(21, 34) == 1);  // F(8) and F(9)
-        // assert(gcd(34, 55) == 1);  // F(9) and F(10)
-        // assert(gcd(55, 89) == 1);  // F(10) and F(11)
+        // Fibonacci numbers (consecutive Fibonacci numbers are coprime)
+        assert(gcd(21, 34) == 1) by {  // F(8) and F(9)
+            reveal_with_fuel(gcd, 10);
+        };
+        assert(gcd(34, 55) == 1) by {  // F(9) and F(10)
+            reveal_with_fuel(gcd, 10);
+        };
+        assert(gcd(55, 89) == 1) by {  // F(10) and F(11)
+            reveal_with_fuel(gcd, 10);
+        };
 
     }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn test_gcd_rec_impl() {
+            assert_eq!(gcd_rec_impl(48, 18), 6);
+            assert_eq!(gcd_rec_impl(100, 20), 20);
+            assert_eq!(gcd_rec_impl(252, 105), 21);
+            assert_eq!(gcd_rec_impl(1071, 462), 21);
+            assert_eq!(gcd_rec_impl(123456, 7890), 6);
+            assert_eq!(gcd_rec_impl(987654321, 123456789), 9);
+
+            // Edge cases
+            assert_eq!(gcd_rec_impl(1000000, 1), 1);
+            assert_eq!(gcd_rec_impl(1, 1000000), 1);
+            assert_eq!(gcd_rec_impl(1000000, 1000000), 1000000);
+            assert_eq!(gcd_rec_impl(0, 1000000), 1000000);
+            assert_eq!(gcd_rec_impl(1000000, 0), 1000000);
+
+            // Prime numbers
+            assert_eq!(gcd_rec_impl(17, 19), 1);
+            assert_eq!(gcd_rec_impl(97, 101), 1);
+            assert_eq!(gcd_rec_impl(1009, 1013), 1);
+
+            // Powers of 2
+            assert_eq!(gcd_rec_impl(64, 32), 32);
+            assert_eq!(gcd_rec_impl(128, 64), 64);
+            assert_eq!(gcd_rec_impl(1024, 512), 512);
+
+            // Fibonacci numbers
+            assert_eq!(gcd_rec_impl(21, 34), 1);
+            assert_eq!(gcd_rec_impl(34, 55), 1);
+            assert_eq!(gcd_rec_impl(55, 89), 1);
+        }
+
+        #[test]
+        fn test_gcd_iter_impl() {
+            assert_eq!(gcd_iter_impl(48, 18), 6);
+            assert_eq!(gcd_iter_impl(100, 20), 20);
+            assert_eq!(gcd_iter_impl(252, 105), 21);
+            assert_eq!(gcd_iter_impl(1071, 462), 21);
+            assert_eq!(gcd_iter_impl(123456, 7890), 6);
+            assert_eq!(gcd_iter_impl(987654321, 123456789), 9);
+
+            // Edge cases
+            assert_eq!(gcd_iter_impl(1000000, 1), 1);
+            assert_eq!(gcd_iter_impl(1, 1000000), 1);
+            assert_eq!(gcd_iter_impl(1000000, 1000000), 1000000);
+            assert_eq!(gcd_iter_impl(0, 1000000), 1000000);
+            assert_eq!(gcd_iter_impl(1000000, 0), 1000000);
+
+            // Prime numbers
+            assert_eq!(gcd_iter_impl(17, 19), 1);
+            assert_eq!(gcd_iter_impl(97, 101), 1);
+            assert_eq!(gcd_iter_impl(1009, 1013), 1);
+
+            // Powers of 2
+            assert_eq!(gcd_iter_impl(64, 32), 32);
+            assert_eq!(gcd_iter_impl(128, 64), 64);
+            assert_eq!(gcd_iter_impl(1024, 512), 512);
+
+            // Fibonacci numbers
+            assert_eq!(gcd_iter_impl(21, 34), 1);
+            assert_eq!(gcd_iter_impl(34, 55), 1);
+            assert_eq!(gcd_iter_impl(55, 89), 1);
+        }
+
+        #[test]
+        fn test_gcd_implementations_agree() {
+            let test_cases = vec![
+                (48, 18), (100, 20), (252, 105), (1071, 462),
+                (123456, 7890), (987654321, 123456789),
+                (1000000, 1), (1, 1000000), (1000000, 1000000),
+                (0, 1000000), (1000000, 0), (17, 19), (97, 101),
+                (1009, 1013), (64, 32), (128, 64), (1024, 512),
+                (21, 34), (34, 55), (55, 89)
+            ];
+
+            for (a, b) in test_cases {
+                assert_eq!(
+                    gcd_rec_impl(a, b),
+                    gcd_iter_impl(a, b),
+                    "GCD implementations disagree for ({}, {})", a, b
+                );
+            }
+        }
+
+        #[test]
+        fn test_gcd_properties() {
+            // Test commutativity: gcd(a, b) = gcd(b, a)
+            assert_eq!(gcd_rec_impl(48, 18), gcd_rec_impl(18, 48));
+            assert_eq!(gcd_iter_impl(100, 20), gcd_iter_impl(20, 100));
+
+            // Test that gcd(a, 0) = a and gcd(0, b) = b
+            assert_eq!(gcd_rec_impl(42, 0), 42);
+            assert_eq!(gcd_rec_impl(0, 42), 42);
+            assert_eq!(gcd_iter_impl(42, 0), 42);
+            assert_eq!(gcd_iter_impl(0, 42), 42);
+
+            // Test that gcd(a, a) = a
+            assert_eq!(gcd_rec_impl(17, 17), 17);
+            assert_eq!(gcd_iter_impl(17, 17), 17);
+        }
+    }
+
 }
 
 
