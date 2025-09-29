@@ -14,7 +14,7 @@ Write a spec `sum_spec(s: Seq<usize>) -> int` that returns the mathematical sum 
 
 This problem is challenging because you have state that none of the individual additions performed while computing the sum overflow/underflow in the pre-condition for `sum(s: Vec<usize>) -> usize`:
 
-$$\forall k, 0 \leq k \leq |s| \implies \mathtt{isize::MIN} <= \mathtt{sum}\_\mathtt{spec}(s@.\mathtt{subrange}(0, k)) <= \mathit{isize::MAX}$$
+$$\forall k, 0 \leq k \leq |s| \implies \mathtt{isize::MIN} <= \mathtt{sum}\_\mathtt{spec}(s\mathtt{@}.\mathtt{subrange}(0, k)) <= \mathit{isize::MAX}$$
 
 Proving the iterative loop in the implementation has this property requires a lemma that states for $0 \leq i \le |s|$:
 
