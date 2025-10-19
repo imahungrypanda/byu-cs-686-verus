@@ -1,6 +1,6 @@
 # Homework 2
 
-Chapter [4. Recursion and loops](https://verus-lang.github.io/verus/guide/recursion_loops.html). This homework has you follow the pattern for the `triangle` example from the reading several times. Doing it for the first time on your own is actually really hard. Then applying it again is easier. The biggest challenge is figuring out what `verus` needs to do the algebra. That knowledge comes from the [lemmas about arithmetic](https://verus-lang.github.io/verus/verusdoc/vstd/arithmetic/mul/index.html) in the [vstd library](https://verus-lang.github.io/verus/verusdoc/vstd/index.html). I've identified the set of lemmas I used in the solution for each problem. Figuring out where, when, and how to use them is still challenging. Be patient, and when needed, use AI to help.
+Chapter [5. Recursion and loops](https://verus-lang.github.io/verus/guide/recursion_loops.html). This homework has you follow the pattern for the `triangle` example from the reading several times. Doing it for the first time on your own is actually really hard. Then applying it again is easier. The biggest challenge is figuring out what `verus` needs to do the algebra. That knowledge comes from the [lemmas about arithmetic](https://verus-lang.github.io/verus/verusdoc/vstd/arithmetic/mul/index.html) in the [vstd library](https://verus-lang.github.io/verus/verusdoc/vstd/index.html). I've identified the set of lemmas I used in the solution for each problem. Figuring out where, when, and how to use them is still challenging. Be patient, and when needed, use AI to help.
 
 # Problems
 
@@ -8,7 +8,7 @@ Most of the proofs can be completed with `nonlinear_arith` mode with the excepti
 
 ## Problem 1: factorial
 
-Write a complete specification and implementation for `factorial` following the pattern for `triangle` in chapter [4. Recursion and Loops](https://verus-lang.github.io/verus/guide/recursion_loops.html).
+Write a complete specification and implementation for `factorial` following the pattern for `triangle` in chapter [5. Recursion and Loops](https://verus-lang.github.io/verus/guide/recursion_loops.html).
 
 1. Write a recursive specification for `factorial`.
 1. Prove that `factorial(n) >= 1`

@@ -71,7 +71,7 @@ exec fn m(x0: isize) -> (x: isize)
 }
 ```
 
-### Problem 2
+### Problem 3
 
 Complete the proof of the implementation by hand using weakest pre-condition calculus.
 
