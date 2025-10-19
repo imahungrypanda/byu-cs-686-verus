@@ -88,6 +88,8 @@ verus! {
         }
 
         exec fn absolute_difference(x: i32, y: i32) -> (result: u32)
+            requires
+                abs(x as int - y as int) as u64 <= u32::MAX as u64,
             ensures
                 result == spec_absolute_difference(x as int, y as int),
         {
