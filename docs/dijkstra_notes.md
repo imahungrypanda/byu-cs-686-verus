@@ -161,11 +161,11 @@ Every reachable node has its exact shortest distance, and unreachable nodes rema
 
 ### Graph Structure
 
-- [ ] Define `Edge` struct with `to: usize` and `w: u64`
-- [ ] Define `Graph` struct with `n: usize` and `adj: Vec<Vec<Edge>>`
-- [ ] Prove `g.adj.len() == g.n`
-- [ ] Prove all edge targets are in range: `forall u,i :: 0 ≤ u < g.n ∧ 0 ≤ i < g.adj[u].len() ⇒ g.adj[u][i].to < g.n`
-- [ ] Prove all weights non-negative: `forall u,i :: g.adj[u][i].w ≥ 0`
+- [x] Define `Edge` struct with `to: usize` and `w: u64`
+- [x] Define `Graph` struct with `n: usize` and `adj: Vec<Vec<Edge>>`
+- [x] Prove `g.adj.len() == g.n`
+- [x] Prove all edge targets are in range: `forall u,i :: 0 ≤ u < g.n ∧ 0 ≤ i < g.adj[u].len() ⇒ g.adj[u][i].to < g.n`
+- [x] Prove all weights non-negative: `forall u,i :: g.adj[u][i].w ≥ 0`
 
 ### Initialization
 
