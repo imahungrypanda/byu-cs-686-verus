@@ -80,24 +80,27 @@ spec fn is_valid(g: Graph) -> bool {
     && has_no_duplicate_edges(g)
 }
 
-pub exec fn dijkstra_init(g: Graph, s: usize) -> (Vec<Option<u64>>, Vec<bool>)
-  requires
-    is_valid(g),
-    s < g.n,
-  ensures
-    result.0@.len() == g.n as int,
-    result.1@.len() == g.n as int,
-    result.0@[(s as int)] == Some(0u64),
-    result.1@[(s as int)] == false,
+spec fn dijkstra_init_spec(g: Graph, s: usize) -> (Seq<Option<int>>, Seq<bool>)
 {
-  let mut dist: Vec<Option<u64> > = vec![None; g.n];
-  let visited: Vec<bool> = vec![false; g.n];
-  dist[s] = Some(0u64);
-  (dist, visited)
+  // TODO: Should this be a recommends? Or just keep it as a base case?
+  if !is_valid(g) || !(s < g.n) {
+    (Seq::empty(), Seq::empty())
+  } else {
+    let n: int = g.n as int;
+    let dist = Seq::new(n as nat, |i:int| if i == s as int { Some(0) } else { None });
+    let visited = Seq::new(n as nat, |_i:int| false);
+    (dist, visited)
+  }
 }
 
-spec fn dijkstra(g: Graph, s: usize) -> (dist: Vec<u64>) {
-  let (dist, visited) = dijkstra_init(g, s);
+spec fn shortest_path_distance_spec(g: Graph, s: usize, v: usize) -> int
+{
+  0
+}
+
+spec fn dijkstra_spec(g: Graph, s: usize) -> (dist: Seq<int>) {
+  // TODO:
+  Seq::empty()
 }
 
 
@@ -105,21 +108,18 @@ pub fn run_examples() {
   // Example: Create a simple graph with 4 nodes
   // Nodes: 0, 1, 2, 3
   // Edges: 0->1 (weight 5), 0->2 (weight 3), 1->3 (weight 2), 2->3 (weight 1)
-  let example_graph = Graph {
+  let example_graph: Graph = Graph {
     n: 4,
     adj: vec![
-      vec![Edge { to: 1, w: 5 }, Edge { to: 2, w: 3 }],  // Node 0: edges to 1,2
-      vec![Edge { to: 3, w: 2 }],                        // Node 1: edge to 3
-      vec![Edge { to: 3, w: 1 }],                        // Node 2: edge to 3
-      vec![]                                             // Node 3: no outgoing edges
+      vec![Edge { to: 1, w: 5 }, Edge { to: 2, w: 3 }],
+      vec![Edge { to: 3, w: 2 }],
+      vec![Edge { to: 3, w: 1 }],
+      vec![]
     ]
   };
 
-  // Verify the graph is valid
   assert(is_valid(example_graph));
 
-
-  // TODO: Add actual Dijkstra algorithm implementation
 }
 
 } // verus!
