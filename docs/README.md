@@ -11,6 +11,7 @@
 ## Templates
 
 - `templates/function_spec_template.rs`: Exec function with `requires`/`ensures`.
+- `templates/struct_template.rs`: Struct definition with spec functions and validation.
 - `templates/lemma_template.rs`: Lemma/proof skeleton with `proof fn`.
 - `templates/loop_invariant_template.rs`: While-loop with `invariant`.
 - `templates/quantifier_proof_template.rs`: `assert forall ... by { ... }` skeleton.
