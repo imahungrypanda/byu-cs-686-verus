@@ -12,66 +12,66 @@ pub struct Graph {
 }
 
 spec fn has_correct_adjacency_length(g: Graph) -> bool {
-    g.adj.len() == g.n
+  g.adj.len() == g.n
 }
 
 spec fn has_valid_node_bounds(g: Graph) -> bool {
-    forall|u: int| 0 <= u < g.n ==>
-      (#[trigger] g.adj[u].len() >= 0) && u < g.adj.len()
+  forall|u: int| 0 <= u < g.n ==>
+    (#[trigger] g.adj[u].len() >= 0) && u < g.adj.len()
 }
 
 spec fn has_valid_edge_targets(g: Graph) -> bool {
-    forall|u: int| 0 <= u < g.n ==> (
-        forall|i: int| 0 <= i < #[trigger] g.adj[u].len() ==> {
-            let edge = #[trigger] g.adj[u][i];
-            edge.to < g.n
-        }
-    )
+  forall|u: int| 0 <= u < g.n ==> (
+    forall|i: int| 0 <= i < #[trigger] g.adj[u].len() ==> {
+      let edge = #[trigger] g.adj[u][i];
+      edge.to < g.n
+    }
+  )
 }
 
 spec fn has_no_self_loops(g: Graph) -> bool {
-    forall|u: int| 0 <= u < g.n ==> (
-        forall|i: int| 0 <= i < #[trigger] g.adj[u].len() ==> {
-            let edge = #[trigger] g.adj[u][i];
-            edge.to != u
-        }
-    )
+  forall|u: int| 0 <= u < g.n ==> (
+    forall|i: int| 0 <= i < #[trigger] g.adj[u].len() ==> {
+      let edge = #[trigger] g.adj[u][i];
+      edge.to != u
+    }
+  )
 }
 
 spec fn has_non_negative_weights(g: Graph) -> bool {
-    forall|u: int| 0 <= u < g.n ==> (
-        forall|i: int| 0 <= i < #[trigger] g.adj[u].len() ==> {
-            let edge = #[trigger] g.adj[u][i];
-            edge.w > 0
-        }
-    )
+  forall|u: int| 0 <= u < g.n ==> (
+    forall|i: int| 0 <= i < #[trigger] g.adj[u].len() ==> {
+      let edge = #[trigger] g.adj[u][i];
+      edge.w > 0
+    }
+  )
 }
 
 spec fn has_no_weight_overflow(g: Graph) -> bool {
-    forall|u: int| 0 <= u < g.n ==> (
-        forall|i: int| 0 <= i < #[trigger] g.adj[u].len() ==> {
-            let edge = #[trigger] g.adj[u][i];
-            edge.w <= u64::MAX as int
-        }
-    )
+  forall|u: int| 0 <= u < g.n ==> (
+    forall|i: int| 0 <= i < #[trigger] g.adj[u].len() ==> {
+      let edge = #[trigger] g.adj[u][i];
+      edge.w <= u64::MAX as int
+    }
+  )
 }
 
 spec fn has_no_duplicate_edges(g: Graph) -> bool {
-    forall|u: int| 0 <= u < g.n ==> (
-        forall|i: int, j: int|
-            0 <= i < #[trigger] g.adj[u].len()
-            && 0 <= j < #[trigger] g.adj[u].len()
-            && i != j
-            ==> (
-                #[trigger] g.adj[u][i].to != #[trigger] g.adj[u][j].to
-                || #[trigger] g.adj[u][i].w != #[trigger] g.adj[u][j].w
-            )
-    )
+  forall|u: int| 0 <= u < g.n ==> (
+    forall|i: int, j: int|
+      0 <= i < #[trigger] g.adj[u].len()
+      && 0 <= j < #[trigger] g.adj[u].len()
+      && i != j
+      ==> (
+        #[trigger] g.adj[u][i].to != #[trigger] g.adj[u][j].to
+        || #[trigger] g.adj[u][i].w != #[trigger] g.adj[u][j].w
+      )
+  )
 }
 
 // Graph validition
 spec fn is_valid(g: Graph) -> bool {
-    has_correct_adjacency_length(g)
+  has_correct_adjacency_length(g)
     && has_valid_node_bounds(g)
     && has_valid_edge_targets(g)
     && has_no_self_loops(g)
