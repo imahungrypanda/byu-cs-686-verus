@@ -3,13 +3,12 @@ use vstd::prelude::*;
 verus! {
 
 pub struct Edge {
-    pub to: int,
-    pub w: int,
+  pub to: usize,
+  pub w: u64
 }
-
 pub struct Graph {
-    pub n: int,
-    pub adj: Vec<Vec<Edge>>,
+  pub n: usize,
+  pub adj: Vec<Vec<Edge>>
 }
 
 spec fn has_correct_adjacency_length(g: Graph) -> bool {
