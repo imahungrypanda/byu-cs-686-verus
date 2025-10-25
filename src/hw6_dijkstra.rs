@@ -80,24 +80,46 @@ spec fn is_valid(g: Graph) -> bool {
     && has_no_duplicate_edges(g)
 }
 
+pub exec fn dijkstra_init(g: Graph, s: usize) -> (Vec<Option<u64>>, Vec<bool>)
+  requires
+    is_valid(g),
+    s < g.n,
+  ensures
+    result.0@.len() == g.n as int,
+    result.1@.len() == g.n as int,
+    result.0@[(s as int)] == Some(0u64),
+    result.1@[(s as int)] == false,
+{
+  let mut dist: Vec<Option<u64> > = vec![None; g.n];
+  let visited: Vec<bool> = vec![false; g.n];
+  dist[s] = Some(0u64);
+  (dist, visited)
+}
+
+spec fn dijkstra(g: Graph, s: usize) -> (dist: Vec<u64>) {
+  let (dist, visited) = dijkstra_init(g, s);
+}
+
+
 pub fn run_examples() {
-    // Example: Create a simple graph with 4 nodes
-    // Nodes: 0, 1, 2, 3
-    // Edges: 0->1 (weight 5), 0->2 (weight 3), 1->3 (weight 2), 2->3 (weight 1)
-    let example_graph = Graph {
-        n: 4,
-        adj: vec![
-            vec![Edge { to: 1, w: 5 }, Edge { to: 2, w: 3 }],  // Node 0: edges to 1,2
-            vec![Edge { to: 3, w: 2 }],                        // Node 1: edge to 3
-            vec![Edge { to: 3, w: 1 }],                        // Node 2: edge to 3
-            vec![]                                             // Node 3: no outgoing edges
-        ]
-    };
+  // Example: Create a simple graph with 4 nodes
+  // Nodes: 0, 1, 2, 3
+  // Edges: 0->1 (weight 5), 0->2 (weight 3), 1->3 (weight 2), 2->3 (weight 1)
+  let example_graph = Graph {
+    n: 4,
+    adj: vec![
+      vec![Edge { to: 1, w: 5 }, Edge { to: 2, w: 3 }],  // Node 0: edges to 1,2
+      vec![Edge { to: 3, w: 2 }],                        // Node 1: edge to 3
+      vec![Edge { to: 3, w: 1 }],                        // Node 2: edge to 3
+      vec![]                                             // Node 3: no outgoing edges
+    ]
+  };
 
-    // Verify the graph is valid
-    assert(is_valid(example_graph));
+  // Verify the graph is valid
+  assert(is_valid(example_graph));
 
-    // TODO: Add actual Dijkstra algorithm implementation
+
+  // TODO: Add actual Dijkstra algorithm implementation
 }
 
 } // verus!
