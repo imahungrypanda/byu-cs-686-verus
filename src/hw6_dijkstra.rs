@@ -2,31 +2,82 @@ use vstd::prelude::*;
 
 verus! {
 
-// Step 1: Define Graph Structure
-// Following the checklist: Define Edge struct with to: usize and w: u64
 pub struct Edge {
-    pub to: usize,
-    pub w: u64,
+    pub to: int,
+    pub w: int,
 }
 
-// Define Graph struct with n: usize and adj: Vec<Vec<Edge>>
 pub struct Graph {
-    pub n: usize,
+    pub n: int,
     pub adj: Vec<Vec<Edge>>,
 }
 
-// Graph validity specification function
-spec fn is_valid(g: Graph) -> bool {
+spec fn has_correct_adjacency_length(g: Graph) -> bool {
     g.adj.len() == g.n
-    // TODO: Add comprehensive validation checks:
-    // 1. Adjacency list length matches node count: g.adj.len() == g.n
-    // 2. All edge targets are valid node indices: forall u,i :: g.adj[u][i].to < g.n
-    // 3. All edge weights are non-negative: forall u,i :: g.adj[u][i].w >= 0
-    // 4. No self-loops (optional): forall u,i :: g.adj[u][i].to != u
-    // 5. No duplicate edges (optional): forall u,i,j :: i != j ==> g.adj[u][i] != g.adj[u][j]
-    // 6. Node indices are in valid range: forall u :: 0 <= u < g.n
-    // 7. Edge indices are in valid range: forall u,i :: 0 <= i < g.adj[u].len()
-    // 8. No overflow in weight calculations: forall u,i :: g.adj[u][i].w <= u64::MAX
+}
+
+spec fn has_valid_node_bounds(g: Graph) -> bool {
+    forall|u: int| 0 <= u < g.n ==> u < g.adj.len()
+}
+
+spec fn has_valid_edge_targets(g: Graph) -> bool {
+    forall|u: int| 0 <= u < g.n ==> (
+        forall|i: int| 0 <= i < g.adj[u].len() ==> {
+            let edge = g.adj[u][i];
+            edge.to < g.n
+        }
+    )
+}
+
+spec fn has_no_self_loops(g: Graph) -> bool {
+    forall|u: int| 0 <= u < g.n ==> (
+        forall|i: int| 0 <= i < g.adj[u].len() ==> {
+            let edge = g.adj[u][i];
+            edge.to != u
+        }
+    )
+}
+
+spec fn has_non_negative_weights(g: Graph) -> bool {
+    forall|u: int| 0 <= u < g.n ==> (
+        forall|i: int| 0 <= i < g.adj[u].len() ==> {
+            let edge = g.adj[u][i];
+            edge.w > 0
+        }
+    )
+}
+
+spec fn has_no_weight_overflow(g: Graph) -> bool {
+    forall|u: int| 0 <= u < g.n ==> (
+        forall|i: int| 0 <= i < g.adj[u].len() ==> {
+            let edge = g.adj[u][i];
+            edge.w <= int::MAX
+        }
+    )
+}
+
+spec fn has_no_duplicate_edges(g: Graph) -> bool {
+    forall|u: int| 0 <= u < g.n ==> (
+        forall|i: int, j: int|
+            0 <= i < g.adj[u].len()
+            && 0 <= j < g.adj[u].len()
+            && i != j
+            ==> (
+                g.adj[u][i].to != g.adj[u][j].to
+                || g.adj[u][i].w != g.adj[u][j].w
+            )
+    )
+}
+
+// Main graph validity function
+spec fn is_valid(g: Graph) -> bool {
+    has_correct_adjacency_length(g)
+    && has_valid_node_bounds(g)
+    && has_valid_edge_targets(g)
+    && has_no_self_loops(g)
+    && has_non_negative_weights(g)
+    && has_no_weight_overflow(g)
+    && has_no_duplicate_edges(g)
 }
 
 pub fn run_examples() {
