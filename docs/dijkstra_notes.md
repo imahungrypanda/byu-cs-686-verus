@@ -177,6 +177,24 @@ Every reachable node has its exact shortest distance, and unreachable nodes rema
 - [ ] Prove all initial distances ≤ INF
 - [ ] Prove no overflow risk in distance calculations
 
+```rust
+pub exec fn dijkstra_init(g: Graph, s: usize) -> (Vec<Option<u64>>, Vec<bool>)
+  requires
+    is_valid(g),
+    s < g.n,
+  ensures
+    result.0@.len() == g.n as int,
+    result.1@.len() == g.n as int,
+    result.0@[(s as int)] == Some(0u64),
+    result.1@[(s as int)] == false,
+{
+  let mut dist: Vec<Option<u64> > = vec![None; g.n];
+  let visited: Vec<bool> = vec![false; g.n];
+  dist[s] = Some(0u64);
+  (dist, visited)
+}
+```
+
 ### Main Loop Structure
 
 - [ ] Implement loop to find minimum unvisited node
