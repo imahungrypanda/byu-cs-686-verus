@@ -4,9 +4,10 @@ mod hw1_basic_specifications;
 mod hw2_recursion_and_loops;
 mod hw3;
 mod hw4;
+mod hw6_dijkstra;
 
-mod example_1;
 mod class;
+mod example_1;
 use vstd::prelude::*;
 
 verus! {
@@ -36,6 +37,9 @@ fn main() {
 
     // Run homework 4 examples (when implemented)
     // hw4::run_examples();
+
+    // Run homework 6 examples (Dijkstra's algorithm)
+    hw6_dijkstra::run_examples();
 
     // Run reading 1 examples
     example_1::run_examples();

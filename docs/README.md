@@ -1,9 +1,15 @@
 # Docs
 
 ## Verus Overview
+
 - `verus_overview.md`: Quick reference to Verus concepts and workflow.
 
+## Algorithm Notes
+
+- `dijkstra_notes.md`: Dijkstra's algorithm breakdown with verification checklist and proof structure.
+
 ## Templates
+
 - `templates/function_spec_template.rs`: Exec function with `requires`/`ensures`.
 - `templates/lemma_template.rs`: Lemma/proof skeleton with `proof fn`.
 - `templates/loop_invariant_template.rs`: While-loop with `invariant`.
