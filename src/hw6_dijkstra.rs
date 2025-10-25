@@ -93,9 +93,9 @@ spec fn dijkstra_init_spec(g: Graph, s: usize) -> (Seq<Option<int>>, Seq<bool>)
   }
 }
 
-spec fn shortest_path_distance_spec(g: Graph, s: usize, v: usize) -> int
+spec fn shortest_path_distance_spec(g: Graph, s: usize, v: usize) -> Option<int>
 {
-  0
+  Option::<int>::None
 }
 
 spec fn dijkstra_spec(g: Graph, s: usize) -> (dist: Seq<int>) {
