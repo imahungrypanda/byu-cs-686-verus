@@ -215,3 +215,21 @@ Every reachable node has its exact shortest distance, and unreachable nodes rema
 3. Pick min unvisited → ensures progress
 4. Relax neighbors → improves estimates safely
 5. Repeat until done → guarantees optimal shortest paths
+
+---
+
+### Quantifiers and triggers (Verus tips)
+
+- When using `forall` in specs (e.g., over `g.adj[u]`), add `#[trigger]` on terms that mention all bound vars, such as `g.adj[u].len()` and `g.adj[u][i]`.
+- Example pattern used in this repo:
+  ```rust
+  forall|u: int| 0 <= u < g.n ==> (
+      forall|i: int|
+          0 <= i < #[trigger] g.adj[u].len() ==> {
+              let edge = #[trigger] g.adj[u][i];
+              edge.to < g.n
+          }
+  )
+  ```
+- You can acknowledge auto-chosen triggers with `#![auto]` inside the forall body.
+- Reference: Verus guide on triggers: https://verus-lang.github.io/verus/guide/forall.html?highlight=trigger#forall-and-triggers
