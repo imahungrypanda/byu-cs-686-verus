@@ -6,6 +6,7 @@ pub struct Edge {
   pub to: usize,
   pub w: u64
 }
+
 pub struct Graph {
   pub number_of_nodes: usize,
   pub adjacent_nodes: Vec<Vec<Edge>>
@@ -23,7 +24,7 @@ spec fn has_valid_node_bounds(g: Graph) -> bool {
 spec fn has_valid_edge_targets(g: Graph) -> bool {
   forall|u: int| 0 <= u < g.number_of_nodes ==> (
     forall|i: int| 0 <= i < #[trigger] g.adjacent_nodes[u].len() ==> {
-      let edge = #[trigger] g.adjacent_nodes[u][i];
+      let edge: Edge = #[trigger] g.adjacent_nodes[u][i];
       edge.to < g.number_of_nodes
     }
   )
@@ -32,7 +33,7 @@ spec fn has_valid_edge_targets(g: Graph) -> bool {
 spec fn has_no_self_loops(g: Graph) -> bool {
   forall|u: int| 0 <= u < g.number_of_nodes ==> (
     forall|i: int| 0 <= i < #[trigger] g.adjacent_nodes[u].len() ==> {
-      let edge = #[trigger] g.adjacent_nodes[u][i];
+      let edge: Edge = #[trigger] g.adjacent_nodes[u][i];
       edge.to != g.number_of_nodes
     }
   )
@@ -41,7 +42,7 @@ spec fn has_no_self_loops(g: Graph) -> bool {
 spec fn has_non_negative_weights(g: Graph) -> bool {
   forall|u: int| 0 <= u < g.number_of_nodes ==> (
     forall|i: int| 0 <= i < #[trigger] g.adjacent_nodes[u].len() ==> {
-      let edge = #[trigger] g.adjacent_nodes[u][i];
+      let edge: Edge = #[trigger] g.adjacent_nodes[u][i];
       edge.w > 0
     }
   )
@@ -50,7 +51,7 @@ spec fn has_non_negative_weights(g: Graph) -> bool {
 spec fn has_no_weight_overflow(g: Graph) -> bool {
   forall|u: int| 0 <= u < g.number_of_nodes ==> (
     forall|i: int| 0 <= i < #[trigger] g.adjacent_nodes[u].len() ==> {
-      let edge = #[trigger] g.adjacent_nodes[u][i];
+      let edge: Edge = #[trigger] g.adjacent_nodes[u][i];
       edge.w <= u64::MAX as int
     }
   )
