@@ -100,9 +100,83 @@ spec fn dijkstra_init_spec(graph: Graph, start_node: int) -> (Seq<Option<int>>, 
   }
 }
 
-spec fn shortest_path_distance_spec(g: Graph, s: usize, v: usize) -> Option<int>
+// TODO: Add proof for this function
+spec fn has_unvisited_nodes(dist: Seq<Option<int>>, visited: Seq<bool>) -> bool
+  recommends
+    dist.len() == visited.len() as int,
 {
-  Option::<int>::None
+  exists|i: int| 0 <= i && i < dist.len() as int && !visited[i] && dist[i] matches Some(_)
+}
+
+// TODO: Add proof for this function
+spec fn is_cand(dist: Seq<Option<int>>, visited: Seq<bool>, i: int) -> bool
+  recommends
+    0 <= i < dist.len() as int,
+{
+  match dist[i] {
+    Some(_) => !visited[i],
+    None => false,
+  }
+}
+
+// TODO: Add proof for this function
+spec fn is_better(dist: Seq<Option<int>>, start_node: int, new_node: int) -> bool
+  recommends
+    0 <= start_node < dist.len() as int,
+    0 <= new_node < dist.len() as int,
+    dist[start_node] matches Some(_),
+    dist[new_node] matches Some(_)
+{
+  match (dist[start_node], dist[new_node]) {
+    (Some(di), Some(db)) => di < db || (di == db && start_node <= new_node),
+    _ => false,
+  }
+}
+
+// TODO: Add proof for this function
+spec fn unvisited_core(dist: Seq<Option<int>>, visited: Seq<bool>, start_node: int, best_node: Option<int>) -> Option<int>
+  recommends
+    dist.len() == visited.len(),
+    0 <= start_node <= dist.len() as int,
+    best_node matches Some(_) ==> best_node.unwrap() < dist.len() as int,
+  decreases
+    dist.len() - start_node
+{
+  let dist_len = dist.len() as int;
+  let visited_len = visited.len() as int;
+
+  if start_node < 0 || start_node >= dist_len || start_node >= visited_len {
+    best_node
+  } else {
+    let new_best: Option<int> = if is_cand(dist, visited, start_node) {
+      match best_node {
+        Option::None => Option::Some(start_node),
+        Option::Some(test_node) =>
+          if is_better(dist, start_node, test_node) {
+            Option::Some(start_node)
+          } else {
+            best_node
+          }
+      }
+    } else {
+      best_node
+    };
+
+    unvisited_core(dist, visited, start_node + 1, new_best)
+  }
+}
+
+// TODO: Add proof for this function
+spec fn find_min_unvisited_spec(dist: Seq<Option<int>>, visited: Seq<bool>) -> Option<int>
+  recommends
+    dist.len() == visited.len() as int,
+    has_unvisited_nodes(dist, visited),
+{
+  if !has_unvisited_nodes(dist, visited) {
+    Option::None
+  } else {
+    unvisited_core(dist, visited, 0, Option::None)
+  }
 }
 
 spec fn dijkstra_core_spec(graph: Graph, start_node: int) -> Seq<Option<int>>
