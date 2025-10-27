@@ -80,15 +80,22 @@ spec fn is_valid(g: Graph) -> bool {
     && has_no_duplicate_edges(g)
 }
 
-spec fn dijkstra_init_spec(g: Graph, s: usize) -> (Seq<Option<int>>, Seq<bool>)
+spec fn dijkstra_init_spec(graph: Graph, start_node: int) -> (Seq<Option<int>>, Seq<bool>)
+  recommends
+    is_valid(graph),
+    0 <= start_node && start_node < graph.number_of_nodes as int
 {
-  // TODO: Should this be a recommends? Or just keep it as a base case?
-  if !is_valid(g) || !(s < g.n) {
+  if !is_valid(graph) || !(start_node < graph.number_of_nodes) {
     (Seq::empty(), Seq::empty())
   } else {
-    let n: int = g.n as int;
-    let dist = Seq::new(n as nat, |i:int| if i == s as int { Some(0) } else { None });
-    let visited = Seq::new(n as nat, |_i:int| false);
+    let dist = Seq::new(graph.number_of_nodes as nat, |i:int|
+      if i == start_node {
+        Some(0)
+      } else {
+        None
+      }
+    );
+    let visited = Seq::new(graph.number_of_nodes as nat, |_i:int| false);
     (dist, visited)
   }
 }
@@ -98,9 +105,41 @@ spec fn shortest_path_distance_spec(g: Graph, s: usize, v: usize) -> Option<int>
   Option::<int>::None
 }
 
-spec fn dijkstra_spec(g: Graph, s: usize) -> (dist: Seq<int>) {
-  // TODO:
-  Seq::empty()
+spec fn dijkstra_core_spec(graph: Graph, start_node: int) -> Seq<Option<int>>
+  recommends
+    is_valid(graph),
+    0 <= start_node && start_node < graph.number_of_nodes as int
+{
+  let (dist, visited) = dijkstra_init_spec(graph, start_node);
+
+  let visited = visited.update(start_node, true);
+
+  // TODO: There is no way to iterate over a sequence in Verus.
+  // while !visited.all(|b:bool| b) {
+  //   let next_node: int = find_min_unvisited_spec(dist, visited);
+
+  //   for edge in graph.adjacent_nodes[next_node] {
+  //     if !visited[edge.to as int] {
+  //       // TODO is this right?
+  //       visited.update(edge.to as int, true);
+  //     }
+  //   }
+  // }
+
+  dist
+}
+
+spec fn dijkstra_spec(graph: Graph, start_node: int) -> Seq<Option<int>>
+  recommends
+    is_valid(graph),
+    0 <= start_node && start_node < graph.number_of_nodes as int
+{
+  let number_of_nodes: int = graph.number_of_nodes as int;
+  if !is_valid(graph) || !(0 <= start_node && start_node < number_of_nodes) {
+    Seq::empty()
+  } else {
+    dijkstra_core_spec(graph, start_node)
+  }
 }
 
 
