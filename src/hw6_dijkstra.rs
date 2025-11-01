@@ -154,7 +154,7 @@ pub fn has_unvisited_nodes_proof_tests() {
   }
 }
 
-// TODO: Add proof for this function
+// Is this node a candidate for the next node to visit?
 spec fn is_cand(dist: Seq<Option<int>>, visited: Seq<bool>, i: int) -> bool
   recommends
     0 <= i < dist.len() as int,
@@ -162,6 +162,61 @@ spec fn is_cand(dist: Seq<Option<int>>, visited: Seq<bool>, i: int) -> bool
   match dist[i] {
     Some(_) => !visited[i],
     None => false,
+  }
+}
+
+proof fn is_cand_lemma(dist: Seq<Option<int>>, visited: Seq<bool>, i: int)
+  requires
+    0 <= i < dist.len() as int,
+    dist.len() == visited.len() as int,
+  ensures
+    is_cand(dist, visited, i) <==> (dist[i] matches Some(_) && !visited[i])
+{
+  if dist[i] matches Some(_) {
+    assert(is_cand(dist, visited, i) == !visited[i]);
+    assert((dist[i] matches Some(_) && !visited[i]) == !visited[i]);
+    assert(is_cand(dist, visited, i) == (dist[i] matches Some(_) && !visited[i]));
+  } else {
+    assert(is_cand(dist, visited, i) == false);
+    assert((dist[i] matches Some(_) && !visited[i]) == false);
+    assert(is_cand(dist, visited, i) == (dist[i] matches Some(_) && !visited[i]));
+  }
+}
+
+pub fn is_cand_proof_tests() {
+  proof {
+    let dist = seq![Some(0), Some(5), None, Some(3)];
+    let visited = seq![true, false, false, false];
+
+    // Test case 1: Node with distance and not visited (should be true)
+    assert(is_cand(dist, visited, 1));  // node 1: Some(5), not visited
+
+    // Test case 2: Node with distance but already visited (should be false)
+    assert(!is_cand(dist, visited, 0));  // node 0: Some(0), but visited
+
+    // Test case 3: Node with no distance (None) - not visited (should be false)
+    assert(!is_cand(dist, visited, 2));  // node 2: None, not visited
+
+    // Test case 4: Node with no distance (None) - visited (should be false)
+    let dist2 = seq![Some(0), None, Some(3)];
+    let visited2 = seq![true, true, false];
+    assert(!is_cand(dist2, visited2, 1));  // node 1: None, visited
+
+    // Test case 5: Node with distance and not visited at end of sequence
+    assert(is_cand(dist, visited, 3));  // node 3: Some(3), not visited
+
+    // Test case 6: All nodes have distances, one not visited
+    let dist3 = seq![Some(0), Some(5), Some(3)];
+    let visited3 = seq![true, false, true];
+    assert(is_cand(dist3, visited3, 1));  // node 1: Some(5), not visited
+    assert(!is_cand(dist3, visited3, 0)); // node 0: Some(0), visited
+    assert(!is_cand(dist3, visited3, 2)); // node 2: Some(3), visited
+
+    // Test case 7: All nodes have None (no distances)
+    let dist4 = seq![None, None, None];
+    let visited4 = seq![false, false, false];
+    assert(!is_cand(dist4, visited4, 0));  // node 0: None
+    assert(!is_cand(dist4, visited4, 1));  // node 1: None
   }
 }
 
