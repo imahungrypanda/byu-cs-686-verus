@@ -277,17 +277,17 @@ spec fn dijkstra_core_spec(graph: Graph, visited: Seq<bool>, start_node: int, de
     is_valid(graph),
     0 <= start_node && start_node < graph.number_of_nodes as int
 {
-  // TODO: There is no way to iterate over a sequence in Verus.
-  // while !visited.all(|b:bool| b) {
-  //   let next_node: int = find_min_unvisited_spec(dist, visited);
+  let next_node: int = find_min_unvisited_spec(destination_node, visited);
+  if next_node == destination_node {
+    return next_node
+  }
 
-  //   for edge in graph.adjacent_nodes[next_node] {
-  //     if !visited[edge.to as int] {
-  //       // TODO is this right?
-  //       visited.update(edge.to as int, true);
-  //     }
-  //   }
-  // }
+  // let visited = visited.update(next_node, true);
+  // let dist = dist.update(next_node, Some(0));
+
+  // TODO: How to update the path values?
+
+  // dijkstra_core_spec(graph, visited, start_node, destination_node)
 
   Seq::empty()
 }
