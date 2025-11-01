@@ -212,7 +212,6 @@ pub fn is_cand_proof_tests() {
   }
 }
 
-// TODO: Add proof for this function
 spec fn is_better(dist: Seq<Option<int>>, start_node: int, new_node: int) -> bool
   recommends
     0 <= start_node < dist.len() as int,
@@ -223,6 +222,84 @@ spec fn is_better(dist: Seq<Option<int>>, start_node: int, new_node: int) -> boo
   match (dist[start_node], dist[new_node]) {
     (Some(di), Some(db)) => di < db || (di == db && start_node <= new_node),
     _ => false,
+  }
+}
+
+// Lemma characterizing is_better: it's true iff start_node has smaller distance,
+// or equal distance with start_node <= new_node
+// NOTE: Ties are broken by the start_node <= new_node condition.
+proof fn is_better_lemma(dist: Seq<Option<int>>, start_node: int, new_node: int)
+  requires
+    0 <= start_node < dist.len() as int,
+    0 <= new_node < dist.len() as int,
+    dist[start_node] matches Some(_),
+    dist[new_node] matches Some(_),
+  ensures
+    is_better(dist, start_node, new_node) <==>
+      (match (dist[start_node], dist[new_node]) {
+        (Some(di), Some(db)) => di < db || (di == db && start_node <= new_node),
+        _ => false,
+      })
+{
+  match dist[start_node] {
+    Some(di) => {
+      match dist[new_node] {
+        Some(db) => {
+          // Case analysis: di < db, di == db, or di > db
+          if di < db {
+            // Case 1: di < db, so is_better is true
+            assert(is_better(dist, start_node, new_node) == true);
+            assert((di < db || (di == db && start_node <= new_node)) == true);
+            assert(is_better(dist, start_node, new_node) == (di < db || (di == db && start_node <= new_node)));
+          } else if di == db {
+            // Case 2: di == db, so is_better depends on start_node <= new_node
+            assert(is_better(dist, start_node, new_node) == (start_node <= new_node));
+            assert((di < db || (di == db && start_node <= new_node)) == (start_node <= new_node));
+            assert(is_better(dist, start_node, new_node) == (di < db || (di == db && start_node <= new_node)));
+          } else {
+            // Case 3: di > db, so is_better is false
+            assert(is_better(dist, start_node, new_node) == false);
+            assert((di < db || (di == db && start_node <= new_node)) == false);
+            assert(is_better(dist, start_node, new_node) == (di < db || (di == db && start_node <= new_node)));
+          }
+        }
+        None => {}
+      }
+    }
+    None => {}
+  }
+}
+
+pub fn is_better_proof_tests() {
+  proof {
+    // Test case 1: start_node has smaller distance (should be true)
+    let dist = seq![Some(0), Some(5), Some(10), Some(3)];
+    assert(is_better(dist, 0, 1));  // dist[0]=0 < dist[1]=5
+
+    // Test case 2: start_node has larger distance (should be false)
+    assert(!is_better(dist, 1, 0));  // dist[1]=5 > dist[0]=0
+
+    // Test case 3: Equal distances, start_node < new_node (should be true)
+    let dist2 = seq![Some(5), Some(5), Some(5)];
+    assert(is_better(dist2, 0, 1));  // dist[0]=5 == dist[1]=5, and 0 <= 1
+
+    // Test case 4: Equal distances, start_node == new_node (should be true)
+    assert(is_better(dist2, 0, 0));  // dist[0]=5 == dist[0]=5, and 0 <= 0
+
+    // Test case 5: Equal distances, start_node > new_node (should be false)
+    assert(!is_better(dist2, 2, 1));  // dist[2]=5 == dist[1]=5, but 2 > 1
+
+    // Test case 6: start_node much smaller distance
+    let dist3 = seq![Some(1), Some(100)];
+    assert(is_better(dist3, 0, 1));  // dist[0]=1 < dist[1]=100
+
+    // Test case 7: start_node much larger distance
+    assert(!is_better(dist3, 1, 0));  // dist[1]=100 > dist[0]=1
+
+    // Test case 8: Multiple equal distances, checking tie-breaking
+    let dist4 = seq![Some(7), Some(7), Some(7), Some(7)];
+    assert(is_better(dist4, 0, 3));  // dist[0]=7 == dist[3]=7, and 0 <= 3
+    assert(!is_better(dist4, 3, 0));  // dist[3]=7 == dist[0]=7, but 3 > 0
   }
 }
 
