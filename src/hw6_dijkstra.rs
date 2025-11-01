@@ -190,25 +190,25 @@ pub fn is_cand_proof_tests() {
     assert(!is_cand(dist, visited, 2));  // node 2: None, not visited
 
     // Test case 4: Node with no distance (None) - visited (should be false)
-    let dist2 = seq![Some(0), None, Some(3)];
-    let visited2 = seq![true, true, false];
-    assert(!is_cand(dist2, visited2, 1));  // node 1: None, visited
+    let dist_2 = seq![Some(0), None, Some(3)];
+    let visited_2 = seq![true, true, false];
+    assert(!is_cand(dist_2, visited_2, 1));  // node 1: None, visited
 
     // Test case 5: Node with distance and not visited at end of sequence
     assert(is_cand(dist, visited, 3));  // node 3: Some(3), not visited
 
     // Test case 6: All nodes have distances, one not visited
-    let dist3 = seq![Some(0), Some(5), Some(3)];
-    let visited3 = seq![true, false, true];
-    assert(is_cand(dist3, visited3, 1));  // node 1: Some(5), not visited
-    assert(!is_cand(dist3, visited3, 0)); // node 0: Some(0), visited
-    assert(!is_cand(dist3, visited3, 2)); // node 2: Some(3), visited
+    let dist_3 = seq![Some(0), Some(5), Some(3)];
+    let visited_3 = seq![true, false, true];
+    assert(is_cand(dist_3, visited_3, 1));  // node 1: Some(5), not visited
+    assert(!is_cand(dist_3, visited_3, 0)); // node 0: Some(0), visited
+    assert(!is_cand(dist_3, visited_3, 2)); // node 2: Some(3), visited
 
     // Test case 7: All nodes have None (no distances)
-    let dist4 = seq![None, None, None];
-    let visited4 = seq![false, false, false];
-    assert(!is_cand(dist4, visited4, 0));  // node 0: None
-    assert(!is_cand(dist4, visited4, 1));  // node 1: None
+    let dist_4 = seq![None, None, None];
+    let visited_4 = seq![false, false, false];
+    assert(!is_cand(dist_4, visited_4, 0));  // node 0: None
+    assert(!is_cand(dist_4, visited_4, 1));  // node 1: None
   }
 }
 
@@ -280,26 +280,26 @@ pub fn is_better_proof_tests() {
     assert(!is_better(dist, 1, 0));  // dist[1]=5 > dist[0]=0
 
     // Test case 3: Equal distances, start_node < new_node (should be true)
-    let dist2 = seq![Some(5), Some(5), Some(5)];
-    assert(is_better(dist2, 0, 1));  // dist[0]=5 == dist[1]=5, and 0 <= 1
+    let dist_2 = seq![Some(5), Some(5), Some(5)];
+    assert(is_better(dist_2, 0, 1));  // dist[0]=5 == dist[1]=5, and 0 <= 1
 
     // Test case 4: Equal distances, start_node == new_node (should be true)
-    assert(is_better(dist2, 0, 0));  // dist[0]=5 == dist[0]=5, and 0 <= 0
+    assert(is_better(dist_2, 0, 0));  // dist[0]=5 == dist[0]=5, and 0 <= 0
 
     // Test case 5: Equal distances, start_node > new_node (should be false)
-    assert(!is_better(dist2, 2, 1));  // dist[2]=5 == dist[1]=5, but 2 > 1
+    assert(!is_better(dist_2, 2, 1));  // dist[2]=5 == dist[1]=5, but 2 > 1
 
     // Test case 6: start_node much smaller distance
-    let dist3 = seq![Some(1), Some(100)];
-    assert(is_better(dist3, 0, 1));  // dist[0]=1 < dist[1]=100
+    let dist_3 = seq![Some(1), Some(100)];
+    assert(is_better(dist_3, 0, 1));  // dist[0]=1 < dist[1]=100
 
     // Test case 7: start_node much larger distance
-    assert(!is_better(dist3, 1, 0));  // dist[1]=100 > dist[0]=1
+    assert(!is_better(dist_3, 1, 0));  // dist[1]=100 > dist[0]=1
 
     // Test case 8: Multiple equal distances, checking tie-breaking
-    let dist4 = seq![Some(7), Some(7), Some(7), Some(7)];
-    assert(is_better(dist4, 0, 3));  // dist[0]=7 == dist[3]=7, and 0 <= 3
-    assert(!is_better(dist4, 3, 0));  // dist[3]=7 == dist[0]=7, but 3 > 0
+    let dist_4 = seq![Some(7), Some(7), Some(7), Some(7)];
+    assert(is_better(dist_4, 0, 3));  // dist[0]=7 == dist[3]=7, and 0 <= 3
+    assert(!is_better(dist_4, 3, 0));  // dist[3]=7 == dist[0]=7, but 3 > 0
   }
 }
 
