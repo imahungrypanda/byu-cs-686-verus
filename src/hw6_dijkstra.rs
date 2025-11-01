@@ -101,12 +101,57 @@ spec fn dijkstra_init_spec(graph: Graph, start_node: int) -> (Seq<Option<int>>, 
   }
 }
 
-// TODO: Add proof for this function
 spec fn has_unvisited_nodes(dist: Seq<Option<int>>, visited: Seq<bool>) -> bool
   recommends
     dist.len() == visited.len() as int,
 {
   exists|i: int| 0 <= i && i < dist.len() as int && !visited[i] && dist[i] matches Some(_)
+}
+
+proof fn has_unvisited_nodes_lemma(dist: Seq<Option<int>>, visited: Seq<bool>) -> bool
+  requires
+    dist.len() == visited.len() as int,
+  ensures
+    exists|i: int| 0 <= i < dist.len() as int && !visited[i] && dist[i] matches Some(_)
+{
+  exists|i: int| 0 <= i < dist.len() as int && !visited[i] && dist[i] matches Some(_)
+}
+
+pub fn has_unvisited_nodes_proof_tests() {
+  proof {
+    // Test case 1: Has unvisited nodes with distances
+    let dist = seq![Some(0), Some(5), None, Some(3)];
+    let visited = seq![true, false, false, false];
+    assert(dist.len() == visited.len() as int);
+    assert(has_unvisited_nodes(dist, visited));
+
+    // Test case 2: All nodes visited
+    let dist = seq![Some(0), Some(5), Some(3)];
+    let visited = seq![true, true, true];
+    assert(dist.len() == visited.len() as int);
+    assert(!has_unvisited_nodes(dist, visited));
+
+    // Test case 3: Unvisited nodes but no distances
+    let dist = seq![Some(0), None, None];
+    let visited = seq![true, false, false];
+    assert(dist.len() == visited.len() as int);
+    assert(!has_unvisited_nodes(dist, visited));
+
+    // Test case 4: Empty sequences
+    let dist = Seq::empty();
+    let visited = Seq::empty();
+    assert(dist.len() == visited.len() as int);
+    assert(!has_unvisited_nodes(dist, visited));
+
+    // Test case 5: Single unvisited node with distance
+    let dist = seq![Some(0)];
+    let visited = seq![false];
+    assert(dist.len() == visited.len() as int);
+    assert(has_unvisited_nodes(dist, visited)) by {
+      assert(dist[0] matches Some(_));
+      assert(!visited[0]);
+    };
+  }
 }
 
 // TODO: Add proof for this function
@@ -234,6 +279,7 @@ pub fn run_examples() {
 
   assert(is_valid(example_graph));
 
+  has_unvisited_nodes_proof_tests();
 }
 
 } // verus!
