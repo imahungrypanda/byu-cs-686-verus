@@ -303,7 +303,6 @@ pub fn is_better_proof_tests() {
   }
 }
 
-// TODO: Add proof for this function
 spec fn unvisited_core(dist: Seq<Option<int>>, visited: Seq<bool>, start_node: int, best_node: Option<int>) -> Option<int>
   recommends
     dist.len() == visited.len(),
@@ -333,6 +332,137 @@ spec fn unvisited_core(dist: Seq<Option<int>>, visited: Seq<bool>, start_node: i
     };
 
     unvisited_core(dist, visited, start_node + 1, new_best)
+  }
+}
+
+// Lemma characterizing unvisited_core: returns the best candidate from start_node onward
+// If result is Some(i), then i is a candidate and is better than or equal to all other
+// candidates from start_node onward, and better than or equal to best_node (if best_node is Some)
+proof fn unvisited_core_lemma(dist: Seq<Option<int>>, visited: Seq<bool>, start_node: int, best_node: Option<int>)
+  requires
+    dist.len() == visited.len(),
+    0 <= start_node <= dist.len() as int,
+    best_node matches Some(_) ==> best_node.unwrap() < dist.len() as int,
+  ensures
+    match unvisited_core(dist, visited, start_node, best_node) {
+      Option::Some(result_node) =>
+        is_cand(dist, visited, result_node) &&
+        (forall|j: int| start_node <= j && j < dist.len() as int && is_cand(dist, visited, j) ==>
+          result_node == j || is_better(dist, result_node, j)) &&
+        (best_node matches Option::Some(best) ==>
+          result_node == best || is_better(dist, result_node, best)),
+      Option::None =>
+        !exists|j: int| start_node <= j && j < dist.len() as int && is_cand(dist, visited, j) &&
+        (best_node == Option::None || !is_cand(dist, visited, best_node.unwrap()))
+    }
+  decreases
+    dist.len() - start_node
+{
+  // Base case: start_node is out of bounds
+  if start_node < 0 || start_node >= dist.len() as int || start_node >= visited.len() as int {
+    // Returns best_node directly
+    match best_node {
+      Option::Some(best) => {
+        // Since start_node >= dist.len(), there are no candidates j where start_node <= j < dist.len()
+        // So the forall is vacuously true (no such j exist)
+        // Also, result_node == best, so the condition "result_node == best || is_better(dist, result_node, best)" holds
+        assert(forall|j: int| start_node <= j && j < dist.len() as int && is_cand(dist, visited, j) ==>
+          best == j || is_better(dist, best, j));
+        assert(best == best || is_better(dist, best, best));
+      }
+      Option::None => {
+        // Since start_node >= dist.len(), there are no candidates j where start_node <= j < dist.len()
+        // So !exists|j| start_node <= j < dist.len() && is_cand(dist, visited, j) is true
+        // And best_node == Option::None is true
+        assert(!exists|j: int| start_node <= j && j < dist.len() as int && is_cand(dist, visited, j));
+        assert(best_node == Option::None);
+      }
+    }
+  } else {
+    // Recursive case: check if start_node is a candidate
+    let new_best: Option<int> = if is_cand(dist, visited, start_node) {
+      match best_node {
+        Option::None => Option::Some(start_node),
+        Option::Some(test_node) =>
+          if is_better(dist, start_node, test_node) {
+            Option::Some(start_node)
+          } else {
+            best_node
+          }
+      }
+    } else {
+      best_node
+    };
+
+    unvisited_core_lemma(dist, visited, start_node + 1, new_best);
+  }
+}
+
+pub fn unvisited_core_proof_tests() {
+  proof {
+    // Test case 1: Base case - start_node >= dist.len(), returns best_node
+    let dist = seq![Some(0), Some(5)];
+    let visited = seq![false, false];
+    let result: Option<int> = unvisited_core(dist, visited, 2, Option::Some(1));
+    assert(result == Option::Some(1));  // Returns the passed best_node
+
+    // Test case 2: Single candidate, starting from beginning with None
+    let result_2: Option<int> = unvisited_core(dist, visited, 0, Option::None);
+    assert(result_2 == Option::Some(0));  // Finds node 0 (distance 0)
+
+    // Test case 3: Multiple candidates, finds the best (smallest distance)
+    let dist_2 = seq![Some(5), Some(2), Some(8), Some(1)];
+    let visited_2 = seq![false, false, false, false];
+    let result_3: Option<int> = unvisited_core(dist_2, visited_2, 0, Option::None);
+    assert(result_3 == Option::Some(3));  // Node 3 has smallest distance (1)
+
+    // Test case 4: Multiple candidates with equal distances, picks smallest index
+    let dist_3 = seq![Some(5), Some(5), Some(5)];
+    let visited_3 = seq![false, false, false];
+    let result_4: Option<int> = unvisited_core(dist_3, visited_3, 0, Option::None);
+    assert(result_4 == Option::Some(0));  // Tie broken by index, picks 0
+
+    // Test case 5: Starting from middle, finds best remaining
+    let dist_4 = seq![Some(10), Some(5), Some(3), Some(7)];
+    let visited_4 = seq![false, false, false, false];
+    let result_5: Option<int> = unvisited_core(dist_4, visited_4, 2, Option::None);
+    assert(result_5 == Option::Some(2));  // Starting from index 2, finds itself (distance 3)
+
+    // Test case 6: All visited, returns None if starting with None
+    let dist_5 = seq![Some(0), Some(5), Some(3)];
+    let visited_5 = seq![true, true, true];
+    let result_6: Option<int> = unvisited_core(dist_5, visited_5, 0, Option::None);
+    assert(result_6 == Option::None);  // No candidates found
+
+    // Test case 7: All have no distances (None), returns None
+    let dist_6 = seq![None, None, None];
+    let visited_6 = seq![false, false, false];
+    let result_7: Option<int> = unvisited_core(dist_6, visited_6, 0, Option::None);
+    assert(result_7 == Option::None);  // No candidates (no distances)
+
+    // Test case 8: Mix of visited/unvisited, finds unvisited candidate
+    let dist_7 = seq![Some(0), Some(5), Some(3)];
+    let visited_7 = seq![true, false, false];
+    let result_8: Option<int> = unvisited_core(dist_7, visited_7, 0, Option::None);
+    assert(result_8 == Option::Some(2));  // Node 2 has smallest distance among unvisited
+
+    // Test case 9: Starting with existing best_node, finds better one
+    let dist_8 = seq![Some(10), Some(5), Some(3)];
+    let visited_8 = seq![false, false, false];
+    let result_9: Option<int> = unvisited_core(dist_8, visited_8, 1, Option::Some(0));
+    assert(result_9 == Option::Some(2));  // Starts with node 0 (distance 10), finds better: node 2 (distance 3)
+
+    // Test case 10: Starting with best_node, keeps it if no better found
+    let dist_9 = seq![Some(2), Some(5), Some(8)];
+    let visited_9 = seq![false, false, false];
+    let result_10: Option<int> = unvisited_core(dist_9, visited_9, 1, Option::Some(0));
+    assert(result_10 == Option::Some(0));  // Starts with node 0 (distance 2), no better found
+
+    // Test case 11: Empty sequences
+    let dist_empty = Seq::empty();
+    let visited_empty = Seq::empty();
+    let result_11: Option<int> = unvisited_core(dist_empty, visited_empty, 0, Option::None);
+    assert(result_11 == Option::None);  // Base case immediately returns None
   }
 }
 
