@@ -81,23 +81,15 @@ spec fn is_valid(g: Graph) -> bool {
     && has_no_duplicate_edges(g)
 }
 
-spec fn dijkstra_init_spec(graph: Graph, start_node: int) -> (Seq<Option<int>>, Seq<bool>)
+spec fn dijkstra_init_spec(graph: Graph, start_node: int) -> Seq<Option<int>>
   recommends
     is_valid(graph),
     0 <= start_node && start_node < graph.number_of_nodes as int
 {
   if !is_valid(graph) || !(start_node < graph.number_of_nodes) {
-    (Seq::empty(), Seq::empty())
+    Seq::empty()
   } else {
-    let dist = Seq::new(graph.number_of_nodes as nat, |i:int|
-      if i == start_node {
-        Some(0)
-      } else {
-        None
-      }
-    );
-    let visited = Seq::new(graph.number_of_nodes as nat, |_i:int| false);
-    (dist, visited)
+    Seq::new(graph.number_of_nodes as nat, |_i:int| false);
   }
 }
 
@@ -280,15 +272,11 @@ spec fn find_min_unvisited_spec(dist: Seq<Option<int>>, visited: Seq<bool>) -> O
   }
 }
 
-spec fn dijkstra_core_spec(graph: Graph, start_node: int) -> Seq<Option<int>>
+spec fn dijkstra_core_spec(graph: Graph, visited: Seq<bool>, start_node: int, destination_node: int) -> Seq<Option<int>>
   recommends
     is_valid(graph),
     0 <= start_node && start_node < graph.number_of_nodes as int
 {
-  let (dist, visited) = dijkstra_init_spec(graph, start_node);
-
-  let visited = visited.update(start_node, true);
-
   // TODO: There is no way to iterate over a sequence in Verus.
   // while !visited.all(|b:bool| b) {
   //   let next_node: int = find_min_unvisited_spec(dist, visited);
@@ -301,22 +289,24 @@ spec fn dijkstra_core_spec(graph: Graph, start_node: int) -> Seq<Option<int>>
   //   }
   // }
 
-  dist
+  Seq::empty()
 }
 
-spec fn dijkstra_spec(graph: Graph, start_node: int) -> Seq<Option<int>>
+spec fn dijkstra_spec(graph: Graph, start_node: int, destination_node: int) -> Seq<Option<int>>
   recommends
     is_valid(graph),
     0 <= start_node && start_node < graph.number_of_nodes as int
 {
   let number_of_nodes: int = graph.number_of_nodes as int;
+  let visited = dijkstra_init_spec(graph, start_node);
+  let visited = visited.update(start_node, true);
+
   if !is_valid(graph) || !(0 <= start_node && start_node < number_of_nodes) {
     Seq::empty()
   } else {
-    dijkstra_core_spec(graph, start_node)
+    dijkstra_core_spec(graph, visited, start_node, destination_node)
   }
 }
-
 
 pub fn run_examples() {
   // Example: Create a simple graph with 4 nodes
