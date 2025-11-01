@@ -532,6 +532,10 @@ pub fn run_examples() {
   assert(is_valid(example_graph));
 
   has_unvisited_nodes_proof_tests();
+  unvisited_core_proof_tests();
+  is_better_proof_tests();
+  is_cand_proof_tests();
+  has_unvisited_nodes_proof_tests();
 }
 
 } // verus!
