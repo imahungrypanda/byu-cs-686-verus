@@ -466,7 +466,6 @@ pub fn unvisited_core_proof_tests() {
   }
 }
 
-// TODO: Add proof for this function
 spec fn find_min_unvisited_spec(dist: Seq<Option<int>>, visited: Seq<bool>) -> Option<int>
   recommends
     dist.len() == visited.len() as int,
@@ -476,6 +475,94 @@ spec fn find_min_unvisited_spec(dist: Seq<Option<int>>, visited: Seq<bool>) -> O
     Option::None
   } else {
     unvisited_core(dist, visited, 0, Option::None)
+  }
+}
+
+// Lemma characterizing find_min_unvisited_spec: returns the best unvisited candidate if one exists
+proof fn find_min_unvisited_spec_lemma(dist: Seq<Option<int>>, visited: Seq<bool>)
+  requires
+    dist.len() == visited.len() as int,
+    has_unvisited_nodes(dist, visited),
+  ensures
+    match find_min_unvisited_spec(dist, visited) {
+      Option::Some(result_node) =>
+        is_cand(dist, visited, result_node) &&
+        (forall|j: int| 0 <= j && j < dist.len() as int && is_cand(dist, visited, j) ==>
+          result_node == j || is_better(dist, result_node, j)),
+      Option::None =>
+        false  // Should never happen since has_unvisited_nodes is true
+    }
+{
+  // find_min_unvisited_spec calls unvisited_core(dist, visited, 0, Option::None)
+  // Use unvisited_core_lemma to get the properties
+  unvisited_core_lemma(dist, visited, 0, Option::None);
+
+  // Since has_unvisited_nodes(dist, visited) is true, there exists at least one candidate
+  // So the result should be Some(i) for some candidate i
+  // The unvisited_core_lemma ensures that if result is Some(i), then i is the best candidate
+}
+
+pub fn find_min_unvisited_spec_proof_tests() {
+  proof {
+    // Test case 1: Has unvisited nodes, finds the one with smallest distance
+    let dist = seq![Some(5), Some(2), Some(8), Some(1)];
+    let visited = seq![false, false, false, false];
+    let result: Option<int> = find_min_unvisited_spec(dist, visited);
+    assert(result == Option::Some(3));  // Node 3 has smallest distance (1)
+
+    // Test case 2: Has unvisited nodes, equal distances pick smallest index
+    let dist_2 = seq![Some(5), Some(5), Some(5)];
+    let visited_2 = seq![false, false, false];
+    let result_2: Option<int> = find_min_unvisited_spec(dist_2, visited_2);
+    assert(result_2 == Option::Some(0));  // Tie broken by index, picks 0
+
+    // Test case 3: All nodes visited, returns None
+    let dist_3 = seq![Some(0), Some(5), Some(3)];
+    let visited_3 = seq![true, true, true];
+    let result_3: Option<int> = find_min_unvisited_spec(dist_3, visited_3);
+    assert(result_3 == Option::None);  // No unvisited nodes
+
+    // Test case 4: Mix of visited/unvisited, finds best unvisited
+    let dist_4 = seq![Some(0), Some(5), Some(3), Some(2)];
+    let visited_4 = seq![true, false, false, false];
+    let result_4: Option<int> = find_min_unvisited_spec(dist_4, visited_4);
+    assert(result_4 == Option::Some(3));  // Node 3 has smallest distance (2) among unvisited
+
+    // Test case 5: Some nodes have no distances, finds best among those with distances
+    let dist_5 = seq![Some(5), None, Some(3), None];
+    let visited_5 = seq![false, false, false, false];
+    let result_5: Option<int> = find_min_unvisited_spec(dist_5, visited_5);
+    assert(result_5 == Option::Some(2));  // Node 2 has distance 3, better than node 0's 5
+
+    // Test case 6: Only one unvisited node
+    let dist_6 = seq![Some(0), Some(5), Some(3)];
+    let visited_6 = seq![true, true, false];
+    let result_6: Option<int> = find_min_unvisited_spec(dist_6, visited_6);
+    assert(result_6 == Option::Some(2));  // Only node 2 is unvisited
+
+    // Test case 7: All nodes have no distances, returns None
+    let dist_7 = seq![None, None, None];
+    let visited_7 = seq![false, false, false];
+    let result_7: Option<int> = find_min_unvisited_spec(dist_7, visited_7);
+    assert(result_7 == Option::None);  // No candidates (no distances)
+
+    // Test case 8: Large distances, finds smallest
+    let dist_8 = seq![Some(100), Some(50), Some(200), Some(25)];
+    let visited_8 = seq![false, false, false, false];
+    let result_8: Option<int> = find_min_unvisited_spec(dist_8, visited_8);
+    assert(result_8 == Option::Some(3));  // Node 3 has smallest distance (25)
+
+    // Test case 9: Single node, unvisited
+    let dist_9 = seq![Some(0)];
+    let visited_9 = seq![false];
+    let result_9: Option<int> = find_min_unvisited_spec(dist_9, visited_9);
+    assert(result_9 == Option::Some(0));  // Only node, unvisited
+
+    // Test case 10: Single node, visited
+    let dist_10 = seq![Some(0)];
+    let visited_10 = seq![true];
+    let result_10: Option<int> = find_min_unvisited_spec(dist_10, visited_10);
+    assert(result_10 == Option::None);  // Only node is visited
   }
 }
 
