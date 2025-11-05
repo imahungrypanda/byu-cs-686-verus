@@ -84,9 +84,9 @@ spec fn is_valid(g: Graph) -> bool {
 spec fn dijkstra_init_spec(graph: Graph, start_node: int) -> (Seq<Option<int>>, Seq<bool>, Seq<Option<int>>)
   recommends
     is_valid(graph),
-    0 <= start_node && start_node < graph.number_of_nodes as int
+    0 <= start_node < graph.number_of_nodes as int
 {
-  if !is_valid(graph) || !(start_node < graph.number_of_nodes) {
+  if !is_valid(graph) || !(start_node < graph.number_of_nodes as int) {
     (Seq::empty(), Seq::empty(), Seq::empty())
   } else {
     let dist = Seq::new(graph.number_of_nodes as nat, |i:int|
@@ -106,7 +106,7 @@ spec fn has_unvisited_nodes(dist: Seq<Option<int>>, visited: Seq<bool>) -> bool
   recommends
     dist.len() == visited.len() as int,
 {
-  exists|i: int| 0 <= i && i < dist.len() as int && !visited[i] && dist[i] matches Some(_)
+  exists|i: int| 0 <= i < dist.len() as int && !visited[i] && dist[i] matches Some(_)
 }
 
 proof fn has_unvisited_nodes_lemma(dist: Seq<Option<int>>, visited: Seq<bool>) -> bool
@@ -477,8 +477,7 @@ pub fn unvisited_core_proof_tests() {
 
 spec fn find_min_unvisited_spec(dist: Seq<Option<int>>, visited: Seq<bool>) -> Option<int>
   recommends
-    dist.len() == visited.len() as int,
-    has_unvisited_nodes(dist, visited),
+    dist.len() == visited.len() as int
 {
   if !has_unvisited_nodes(dist, visited) {
     Option::None
@@ -502,13 +501,10 @@ proof fn find_min_unvisited_spec_lemma(dist: Seq<Option<int>>, visited: Seq<bool
         false  // Should never happen since has_unvisited_nodes is true
     }
 {
-  // find_min_unvisited_spec calls unvisited_core(dist, visited, 0, Option::None)
-  // Use unvisited_core_lemma to get the properties
-  unvisited_core_lemma(dist, visited, 0, Option::None);
-
-  // Since has_unvisited_nodes(dist, visited) is true, there exists at least one candidate
-  // So the result should be Some(i) for some candidate i
-  // The unvisited_core_lemma ensures that if result is Some(i), then i is the best candidate
+  if !has_unvisited_nodes(dist, visited) {
+  } else {
+    unvisited_core_lemma(dist, visited, 0, Option::None);
+  }
 }
 
 pub fn find_min_unvisited_spec_proof_tests() {
