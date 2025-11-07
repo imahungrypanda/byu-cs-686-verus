@@ -571,7 +571,7 @@ pub fn find_min_unvisited_spec_proof_tests() {
   }
 }
 
-spec fn dijkstra_core_spec(graph: Graph, dist: Seq<Option<int>>, visited: Seq<bool>, parent: Seq<Option<int>>, start_node: int, destination_node: int) -> (Seq<Option<int>>, Seq<bool>, Seq<Option<int>>, Seq<Option<int>>)
+spec fn dijkstra_core_spec(graph: Graph, dist: Seq<Option<int>>, visited: Seq<bool>, parent: Seq<Option<int>>, start_node: int, destination_node: int) -> (Seq<Option<int>>, Seq<bool>, Seq<Option<int>>)
   recommends
     is_valid(graph),
     dist.len() == graph.number_of_nodes as int,
@@ -586,20 +586,19 @@ spec fn dijkstra_core_spec(graph: Graph, dist: Seq<Option<int>>, visited: Seq<bo
     graph.number_of_nodes as int - start_node
 {
   if !has_unvisited_nodes(dist, visited) {
-    (dist, visited, parent, Seq::empty())
+    (dist, visited, parent)
   } else {
     let next_node_opt: Option<int> = find_min_unvisited_spec(dist, visited);
     match next_node_opt {
       Option::None => {
         // Shouldn't happen if has_unvisited_nodes is true, but handle it
-        (dist, visited, parent, Seq::empty())
+        (dist, visited, parent)
       }
       Option::Some(next_node) => {
         let visited_new = visited.update(next_node, true);
 
         if next_node == destination_node {
-          let path = reconstruct_path_spec(parent, start_node, destination_node);
-          (dist, visited_new, parent, path)
+          (dist, visited_new, parent)
         } else {
           let (dist_new, parent_new) = update_edges_spec(graph, dist, visited_new, parent, next_node);
 
@@ -739,19 +738,7 @@ spec fn update_edges_spec(graph: Graph, dist: Seq<Option<int>>, visited: Seq<boo
   (dist_new, parent_new)
 }
 
-// Reconstruct path from start_node to destination_node using parent array
-spec fn reconstruct_path_spec(parent: Seq<Option<int>>, start_node: int, destination_node: int) -> Seq<Option<int>>
-  requires
-    parent.len() > 0,
-    0 <= start_node < parent.len() as int,
-    0 <= destination_node < parent.len() as int,
-{
-  // TODO:
-  // This will need recursive implementation to trace back through parent chain
-  Seq::empty()
-}
-
-spec fn dijkstra_spec(graph: Graph, start_node: int, destination_node: int) -> Seq<Option<int>>
+spec fn dijkstra_spec(graph: Graph, start_node: int, destination_node: int) -> Option<int>
   recommends
     is_valid(graph),
     0 <= start_node && start_node < graph.number_of_nodes as int,
@@ -760,12 +747,12 @@ spec fn dijkstra_spec(graph: Graph, start_node: int, destination_node: int) -> S
   let number_of_nodes: int = graph.number_of_nodes as int;
 
   if !is_valid(graph) || !(0 <= start_node && start_node < number_of_nodes) || !(0 <= destination_node && destination_node < number_of_nodes) {
-    Seq::empty()
+    Option::None
   } else {
     let (dist, visited, parent) = dijkstra_init_spec(graph, start_node);
     let visited_init = visited.update(start_node, true);
-    let (_dist_final, _visited_final, _parent_final, path) = dijkstra_core_spec(graph, dist, visited_init, parent, start_node, destination_node);
-    path
+    let (dist_final, _visited_final, _parent_final) = dijkstra_core_spec(graph, dist, visited_init, parent, start_node, destination_node);
+    dist_final[destination_node]
   }
 }
 
