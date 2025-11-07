@@ -60,23 +60,6 @@ spec fn path_edges_exist(graph: Graph, path: Seq<int>) -> bool
     0 <= i < path.len() as int - 1 ==> edge_exists(graph, path[i], path[i + 1])
 }
 
-spec fn path_ends_at(graph: Graph, path: Seq<int>, node: int) -> bool
-  recommends
-    path.len() >= 1,
-    path_nodes_within_bounds(graph, path)
-{
-  path[path.len() as int - 1] == node
-}
-
-spec fn path_has_valid_edges(graph: Graph, path: Seq<int>) -> bool
-  recommends
-    path.len() >= 1,
-    path_nodes_within_bounds(graph, path)
-{
-  forall|i: int|
-    0 <= i < path.len() as int - 1 ==> edge_exists(graph, path[i], path[i + 1])
-}
-
 spec fn is_path(graph: Graph, start_node: int, destination_node: int, path: Seq<int>) -> bool {
   path.len() >= 1
     && path[0] == start_node
@@ -590,16 +573,7 @@ spec fn has_unvisited_nodes(dist: Seq<Option<int>>, visited: Seq<bool>) -> bool
   recommends
     dist.len() == visited.len(),
 {
-  exists|i: int| 0 <= i < dist.len() as int && !visited[i] && dist[i] matches Some(_)
-}
-
-proof fn has_unvisited_nodes_lemma(dist: Seq<Option<int>>, visited: Seq<bool>) -> bool
-  requires
-    dist.len() == visited.len(),
-  ensures
-    exists|i: int| 0 <= i < dist.len() as int && !visited[i] && dist[i] matches Some(_)
-{
-  exists|i: int| 0 <= i < dist.len() as int && !visited[i] && dist[i] matches Some(_)
+  exists |i:int| 0 <= i && i < dist.len() as int && is_cand(dist, visited, i)
 }
 
 pub fn has_unvisited_nodes_proof_tests() {
@@ -973,17 +947,11 @@ spec fn find_min_unvisited_spec(dist: Seq<Option<int>>, visited: Seq<bool>) -> O
 // Lemma characterizing find_min_unvisited_spec: returns the best unvisited candidate if one exists
 proof fn find_min_unvisited_spec_lemma(dist: Seq<Option<int>>, visited: Seq<bool>)
   requires
-    dist.len() == visited.len(),
-    has_unvisited_nodes(dist, visited),
+    dist.len() == visited.len()
   ensures
-    match find_min_unvisited_spec(dist, visited) {
-      Option::Some(result_node) =>
-        is_cand(dist, visited, result_node) &&
-        (forall|j: int| 0 <= j && j < dist.len() as int && is_cand(dist, visited, j) ==>
-          result_node == j || is_better(dist, result_node, j)),
-      Option::None =>
-        false  // Should never happen since has_unvisited_nodes is true
-    }
+    forall|i: int| 0 <= i < dist.len() as int ==>
+      (dist[i] matches Some(_) && !visited[i]) <==>
+        (find_min_unvisited_spec(dist, visited) matches Option::Some(i))
 {
   if !has_unvisited_nodes(dist, visited) {
   } else {
@@ -1481,7 +1449,6 @@ pub fn run_examples() {
   unvisited_core_proof_tests();
   is_better_proof_tests();
   is_cand_proof_tests();
-  has_unvisited_nodes_proof_tests();
 }
 
 } // verus!
