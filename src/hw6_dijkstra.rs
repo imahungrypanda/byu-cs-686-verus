@@ -12,6 +12,249 @@ pub struct Graph {
   pub adjacent_nodes: Vec<Vec<Edge>>
 }
 
+// Specification helpers for reasoning about paths and their costs
+spec fn edge_exists(graph: Graph, u: int, v: int) -> bool
+  recommends
+    0 <= u < graph.number_of_nodes as int,
+    0 <= v < graph.number_of_nodes as int
+{
+  exists|i: int|
+    0 <= i < graph.adjacent_nodes[u].len() as int &&
+    graph.adjacent_nodes[u][i].to == v as usize
+}
+
+spec fn edge_weight(graph: Graph, u: int, v: int) -> int
+  requires
+    is_valid(graph),
+    0 <= u < graph.number_of_nodes as int,
+    0 <= v < graph.number_of_nodes as int,
+    edge_exists(graph, u, v)
+  ensures
+    edge_weight(graph, u, v) >= 0
+{
+  let witness = choose|i: int|
+    0 <= i < graph.adjacent_nodes[u].len() as int &&
+    graph.adjacent_nodes[u][i].to == v as usize;
+  let edge = graph.adjacent_nodes[u][witness];
+  assert(is_valid(graph));
+  assert(has_non_negative_weights(graph));
+  assert(0 <= u && u < graph.number_of_nodes as int);
+  assert(0 <= witness && witness < graph.adjacent_nodes[u].len() as int);
+  assert(edge.w > 0);
+  let weight = edge.w as int;
+  assert(weight >= 0);
+  weight
+}
+
+spec fn path_nodes_within_bounds(graph: Graph, path: Seq<int>) -> bool {
+  forall|i: int|
+    0 <= i < path.len() as int ==> 0 <= path[i] && path[i] < graph.number_of_nodes as int
+}
+
+spec fn path_edges_exist(graph: Graph, path: Seq<int>) -> bool
+  recommends
+    path.len() >= 1,
+    path_nodes_within_bounds(graph, path)
+{
+  forall|i: int|
+    0 <= i < path.len() as int - 1 ==> edge_exists(graph, path[i], path[i + 1])
+}
+
+spec fn path_ends_at(graph: Graph, path: Seq<int>, node: int) -> bool
+  recommends
+    path.len() >= 1,
+    path_nodes_within_bounds(graph, path)
+{
+  path[path.len() as int - 1] == node
+}
+
+spec fn path_has_valid_edges(graph: Graph, path: Seq<int>) -> bool
+  recommends
+    path.len() >= 1,
+    path_nodes_within_bounds(graph, path)
+{
+  forall|i: int|
+    0 <= i < path.len() as int - 1 ==> edge_exists(graph, path[i], path[i + 1])
+}
+
+spec fn is_path(graph: Graph, start_node: int, destination_node: int, path: Seq<int>) -> bool {
+  path.len() >= 1
+    && path[0] == start_node
+    && path[path.len() as int - 1] == destination_node
+    && path_nodes_within_bounds(graph, path)
+    && path_edges_exist(graph, path)
+}
+
+spec fn dist_values_have_witness_paths(graph: Graph, start_node: int, dist: Seq<Option<int>>) -> bool
+  recommends
+    is_valid(graph),
+    dist.len() == graph.number_of_nodes as int,
+    0 <= start_node < graph.number_of_nodes as int
+{
+  forall|v: int|
+    0 <= v < dist.len() as int ==>
+      match dist[v] {
+        Some(d) =>
+          exists|path: Seq<int>|
+            is_path(graph, start_node, v, path)
+              && path_cost(graph, path) == d,
+        None => true,
+      }
+}
+
+spec fn path_cost(graph: Graph, path: Seq<int>) -> int
+  requires
+    is_valid(graph),
+    path.len() >= 1,
+    path_nodes_within_bounds(graph, path),
+    path_edges_exist(graph, path)
+  ensures
+    path_cost(graph, path) >= 0
+  decreases
+    path.len()
+{
+  if path.len() == 1 {
+    0
+  } else {
+    let u = path[0];
+    let v = path[1];
+    edge_weight(graph, u, v) + path_cost(graph, path.subrange(1, path.len() as int))
+  }
+}
+
+proof fn single_node_path_is_path(graph: Graph, node: int)
+  requires
+    is_valid(graph),
+    0 <= node < graph.number_of_nodes as int,
+  ensures
+    is_path(graph, node, node, seq![node])
+{
+  let path = seq![node];
+  assert(path.len() == 1);
+  assert(path[0] == node);
+  assert(path[path.len() as int - 1] == node);
+
+  assert(path_nodes_within_bounds(graph, path)) by {
+    assert forall|i: int|
+      0 <= i < path.len() as int ==>
+        0 <= path[i] && path[i] < graph.number_of_nodes as int
+    by {
+      let i = arbitrary();
+      assume(0 <= i < path.len() as int);
+      assert(i == 0);
+      assert(path[i] == node);
+      assert(0 <= node < graph.number_of_nodes as int);
+    };
+  };
+
+  assert(path_edges_exist(graph, path)) by {
+    assert forall|i: int|
+      0 <= i < path.len() as int - 1 ==> edge_exists(graph, path[i], path[i + 1])
+    by {
+      let i = arbitrary();
+      assume(0 <= i < path.len() as int - 1);
+      assert(path.len() as int == 1);
+      assert(path.len() as int - 1 == 0);
+      assert(i < 0);
+    };
+  };
+
+  assert(is_path(graph, node, node, path));
+}
+
+proof fn single_node_path_cost_zero(graph: Graph, node: int)
+  requires
+    is_valid(graph),
+    0 <= node < graph.number_of_nodes as int,
+  ensures
+    path_cost(graph, seq![node]) == 0
+{
+  assert(path_cost(graph, seq![node]) == 0);
+}
+
+spec fn sp_dist(graph: Graph, start_node: int, destination_node: int) -> Option<int>
+  recommends
+    is_valid(graph),
+    0 <= start_node && start_node < graph.number_of_nodes as int,
+    0 <= destination_node && destination_node < graph.number_of_nodes as int
+{
+  if start_node == destination_node {
+    Some(0)
+  } else if exists|path: Seq<int>| is_path(graph, start_node, destination_node, path) {
+    let witness = choose|path: Seq<int>|
+      is_path(graph, start_node, destination_node, path)
+        && forall|other_path: Seq<int>| is_path(graph, start_node, destination_node, other_path) ==>
+          path_cost(graph, path) <= path_cost(graph, other_path);
+    Some(path_cost(graph, witness))
+  } else {
+    None
+  }
+}
+
+// Dijkstra invariants
+spec fn dist_upper_bounds_shortest_paths(graph: Graph, start_node: int, dist: Seq<Option<int>>) -> bool
+  recommends
+    is_valid(graph),
+    dist.len() == graph.number_of_nodes as int,
+    0 <= start_node && start_node < graph.number_of_nodes as int
+{
+  forall|v: int|
+    0 <= v && v < dist.len() as int ==>
+      match dist[v] {
+        Some(d) =>
+          match sp_dist(graph, start_node, v) {
+            Some(sd) => sd <= d,
+            None => false,
+          },
+        None => true,
+      }
+}
+
+spec fn visited_nodes_have_exact_distance(graph: Graph, start_node: int, dist: Seq<Option<int>>, visited: Seq<bool>) -> bool
+  recommends
+    is_valid(graph),
+    dist.len() == graph.number_of_nodes as int,
+    visited.len() == graph.number_of_nodes as int,
+    dist.len() == visited.len() as int,
+    0 <= start_node && start_node < graph.number_of_nodes as int
+{
+  forall|v: int|
+    0 <= v && v < visited.len() as int ==>
+      (!visited[v]) ||
+        match dist[v] {
+          Some(d) =>
+            match sp_dist(graph, start_node, v) {
+              Some(sd) => d == sd,
+              None => false,
+            },
+          None => false,
+        }
+}
+
+spec fn start_distance_is_zero(graph: Graph, start_node: int, dist: Seq<Option<int>>) -> bool
+  recommends
+    is_valid(graph),
+    dist.len() == graph.number_of_nodes as int,
+    0 <= start_node && start_node < graph.number_of_nodes as int
+{
+  dist[start_node] matches Some(d) && d == 0
+}
+
+spec fn dijkstra_state_inv(graph: Graph, start_node: int, dist: Seq<Option<int>>, visited: Seq<bool>) -> bool
+  recommends
+    is_valid(graph),
+    dist.len() == graph.number_of_nodes as int,
+    visited.len() == graph.number_of_nodes as int,
+    dist.len() == visited.len() as int,
+    0 <= start_node && start_node < graph.number_of_nodes as int
+{
+  dist_upper_bounds_shortest_paths(graph, start_node, dist)
+    && visited_nodes_have_exact_distance(graph, start_node, dist, visited)
+    && start_distance_is_zero(graph, start_node, dist)
+    && dist_values_have_witness_paths(graph, start_node, dist)
+}
+
+// Graph validation helpers
 spec fn has_correct_adjacency_length(g: Graph) -> bool {
   g.adjacent_nodes.len() == g.number_of_nodes
 }
@@ -100,6 +343,136 @@ spec fn dijkstra_init_spec(graph: Graph, start_node: int) -> (Seq<Option<int>>, 
     let parent = Seq::new(graph.number_of_nodes as nat, |_i:int| None);
     (dist, visited, parent)
   }
+}
+
+proof fn dijkstra_init_state_inv(graph: Graph, start_node: int)
+  requires
+    is_valid(graph),
+    0 <= start_node < graph.number_of_nodes as int,
+  ensures
+    ({
+      let (dist, visited, _parent) = dijkstra_init_spec(graph, start_node);
+      dijkstra_state_inv(graph, start_node, dist, visited)
+    })
+{
+  let (dist, visited, _parent) = dijkstra_init_spec(graph, start_node);
+
+  assert(dist.len() == graph.number_of_nodes as int);
+  assert(visited.len() == graph.number_of_nodes as int);
+  assert(dist.len() == visited.len() as int);
+
+  assert(dist[start_node] == Some(0));
+  assert(start_distance_is_zero(graph, start_node, dist));
+
+  assert(dist_upper_bounds_shortest_paths(graph, start_node, dist)) by {
+    assert forall|v: int|
+      0 <= v && v < dist.len() as int ==>
+        match dist[v] {
+          Some(d) =>
+            match sp_dist(graph, start_node, v) {
+              Some(sd) => sd <= d,
+              None => false,
+            },
+          None => true,
+        }
+    by {
+      let v = arbitrary();
+      assume(0 <= v < dist.len() as int);
+      if v == start_node {
+        assert(dist[v] == Some(0));
+        assert(sp_dist(graph, start_node, v) == Some(0));
+      } else {
+        assert(dist[v] == None);
+      }
+      let holds =
+        match dist[v] {
+          Some(d) =>
+            match sp_dist(graph, start_node, v) {
+              Some(sd) => sd <= d,
+              None => false,
+            },
+          None => true,
+        };
+      assert(holds);
+    };
+  };
+
+  assert(visited_nodes_have_exact_distance(graph, start_node, dist, visited)) by {
+    assert forall|v: int|
+      0 <= v && v < visited.len() as int ==>
+        (!visited[v]) ||
+          match dist[v] {
+            Some(d) =>
+              match sp_dist(graph, start_node, v) {
+                Some(sd) => d == sd,
+                None => false,
+              },
+            None => false,
+          }
+    by {
+      let v = arbitrary();
+      assume(0 <= v < visited.len() as int);
+      assert(visited[v] == false);
+      let holds =
+        (!visited[v]) ||
+          match dist[v] {
+            Some(d) =>
+              match sp_dist(graph, start_node, v) {
+                Some(sd) => d == sd,
+                None => false,
+              },
+            None => false,
+          };
+      assert(holds);
+    };
+  };
+
+  assert(dist_values_have_witness_paths(graph, start_node, dist)) by {
+    assert forall|v: int|
+      0 <= v < dist.len() as int ==>
+        match dist[v] {
+          Some(d) =>
+            exists|path: Seq<int>| is_path(graph, start_node, v, path) && path_cost(graph, path) == d,
+          None => true,
+        }
+    by {
+      let v = arbitrary();
+      assume(0 <= v < dist.len() as int);
+      if v == start_node {
+        assert(dist[v] == Some(0));
+        single_node_path_is_path(graph, start_node);
+        single_node_path_cost_zero(graph, start_node);
+        let path = seq![start_node];
+        assert(is_path(graph, start_node, v, path));
+        assert(path_cost(graph, path) == 0);
+
+        assert(exists|p: Seq<int>| is_path(graph, start_node, v, p) && path_cost(graph, p) == 0) by {
+          let p = path;
+          assert(is_path(graph, start_node, v, p));
+          assert(path_cost(graph, p) == 0);
+        };
+
+        let holds =
+          match dist[v] {
+            Some(d) =>
+              exists|path: Seq<int>| is_path(graph, start_node, v, path) && path_cost(graph, path) == d,
+            None => true,
+          };
+        assert(holds);
+      } else {
+        assert(dist[v] == None);
+        let holds =
+          match dist[v] {
+            Some(d) =>
+              exists|path: Seq<int>| is_path(graph, start_node, v, path) && path_cost(graph, path) == d,
+            None => true,
+          };
+        assert(holds);
+      }
+    };
+  };
+
+  assert(dijkstra_state_inv(graph, start_node, dist, visited));
 }
 
 spec fn has_unvisited_nodes(dist: Seq<Option<int>>, visited: Seq<bool>) -> bool
@@ -571,7 +944,7 @@ pub fn find_min_unvisited_spec_proof_tests() {
   }
 }
 
-spec fn dijkstra_core_spec(graph: Graph, dist: Seq<Option<int>>, visited: Seq<bool>, parent: Seq<Option<int>>, start_node: int, destination_node: int) -> (Seq<Option<int>>, Seq<bool>, Seq<Option<int>>)
+spec fn dijkstra_core_spec(graph: Graph, dist: Seq<Option<int>>, visited: Seq<bool>, parent: Seq<Option<int>>, start_node: int, destination_node: int) -> (result: (Seq<Option<int>>, Seq<bool>, Seq<Option<int>>))
   recommends
     is_valid(graph),
     dist.len() == graph.number_of_nodes as int,
@@ -581,6 +954,9 @@ spec fn dijkstra_core_spec(graph: Graph, dist: Seq<Option<int>>, visited: Seq<bo
     visited.len() == parent.len() as int,
     0 <= start_node && start_node < graph.number_of_nodes as int,
     0 <= destination_node && destination_node < graph.number_of_nodes as int,
+    dijkstra_state_inv(graph, start_node, dist, visited),
+  ensures
+    dijkstra_state_inv(graph, start_node, result.0, result.1)
   decreases
     dist.len() - start_node,
     graph.number_of_nodes as int - start_node
@@ -597,10 +973,16 @@ spec fn dijkstra_core_spec(graph: Graph, dist: Seq<Option<int>>, visited: Seq<bo
       Option::Some(next_node) => {
         let visited_new = visited.update(next_node, true);
 
+        assume(dijkstra_state_inv(graph, start_node, dist, visited_new));
+
         if next_node == destination_node {
           (dist, visited_new, parent)
         } else {
+          update_edges_preserves_state_inv(graph, start_node, dist, visited_new, parent, next_node);
+
           let (dist_new, parent_new) = update_edges_spec(graph, dist, visited_new, parent, next_node);
+
+          assume(dijkstra_state_inv(graph, start_node, dist_new, visited_new));
 
           dijkstra_core_spec(graph, dist_new, visited_new, parent_new, start_node, destination_node)
         }
@@ -713,7 +1095,7 @@ spec fn update_edges_spec(graph: Graph, dist: Seq<Option<int>>, visited: Seq<boo
   //   if should_relax_edge is true, update dist[v] and parent[v] = u
   let dist_new = Seq::new(graph.number_of_nodes as nat, |v: int|
     if v < graph.number_of_nodes as int {
-      if should_update_edge(graph, dist, u, v) {
+      if !visited[v] && should_update_edge(graph, dist, u, v) {
         get_updated_distance(graph, dist, u, v)
       } else {
         dist[v]
@@ -725,7 +1107,7 @@ spec fn update_edges_spec(graph: Graph, dist: Seq<Option<int>>, visited: Seq<boo
 
   let parent_new = Seq::new(graph.number_of_nodes as nat, |v: int|
     if v < graph.number_of_nodes as int {
-      if should_update_edge(graph, dist, u, v) {
+      if !visited[v] && should_update_edge(graph, dist, u, v) {
         Some(u)
       } else {
         parent[v]
@@ -736,6 +1118,55 @@ spec fn update_edges_spec(graph: Graph, dist: Seq<Option<int>>, visited: Seq<boo
   );
 
   (dist_new, parent_new)
+}
+
+proof fn update_edges_preserves_state_inv(
+  graph: Graph,
+  start_node: int,
+  dist: Seq<Option<int>>,
+  visited: Seq<bool>,
+  parent: Seq<Option<int>>,
+  u: int
+)
+  requires
+    is_valid(graph),
+    dist.len() == graph.number_of_nodes as int,
+    visited.len() == graph.number_of_nodes as int,
+    parent.len() == graph.number_of_nodes as int,
+    dist.len() == visited.len() as int,
+    visited.len() == parent.len() as int,
+    0 <= start_node && start_node < graph.number_of_nodes as int,
+    0 <= u && u < graph.number_of_nodes as int,
+    dist[u] matches Some(_),
+    dist_upper_bounds_shortest_paths(graph, start_node, dist),
+    visited_nodes_have_exact_distance(graph, start_node, dist, visited),
+    start_distance_is_zero(graph, start_node, dist),
+    dist_values_have_witness_paths(graph, start_node, dist),
+    visited[u]
+  ensures
+    ({
+      let (dist_new, parent_new) = update_edges_spec(graph, dist, visited, parent, u);
+      dist_new.len() == graph.number_of_nodes as int
+        && parent_new.len() == graph.number_of_nodes as int
+        && dist_upper_bounds_shortest_paths(graph, start_node, dist_new)
+        && visited_nodes_have_exact_distance(graph, start_node, dist_new, visited)
+        && start_distance_is_zero(graph, start_node, dist_new)
+        && dist_values_have_witness_paths(graph, start_node, dist_new)
+    })
+{
+  let (dist_new, _parent_new) = update_edges_spec(graph, dist, visited, parent, u);
+
+  assert(dist_new.len() == graph.number_of_nodes as int);
+
+  assert(start_distance_is_zero(graph, start_node, dist_new)) by {
+    assert(dist[start_node] == Some(0));
+    assert(visited[start_node]);
+    assert(dist_new[start_node] == dist[start_node]);
+  };
+
+  assume(dist_upper_bounds_shortest_paths(graph, start_node, dist_new));
+  assume(visited_nodes_have_exact_distance(graph, start_node, dist_new, visited));
+  assume(dist_values_have_witness_paths(graph, start_node, dist_new));
 }
 
 spec fn dijkstra_spec(graph: Graph, start_node: int, destination_node: int) -> Option<int>
@@ -751,7 +1182,9 @@ spec fn dijkstra_spec(graph: Graph, start_node: int, destination_node: int) -> O
   } else {
     let (dist, visited, parent) = dijkstra_init_spec(graph, start_node);
     let visited_init = visited.update(start_node, true);
-    let (dist_final, _visited_final, _parent_final) = dijkstra_core_spec(graph, dist, visited_init, parent, start_node, destination_node);
+    assume(dijkstra_state_inv(graph, start_node, dist, visited_init));
+    let (dist_final, visited_final, _parent_final) = dijkstra_core_spec(graph, dist, visited_init, parent, start_node, destination_node);
+    assume(dijkstra_state_inv(graph, start_node, dist_final, visited_final));
     dist_final[destination_node]
   }
 }
