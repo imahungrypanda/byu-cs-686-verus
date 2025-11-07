@@ -39,7 +39,7 @@ spec fn edge_weight(graph: Graph, u: int, v: int) -> int
   assert(is_valid(graph));
   assert(has_non_negative_weights(graph));
   assert(0 <= u && u < graph.number_of_nodes as int);
-  assert(0 <= witness && witness < graph.adjacent_nodes[u].len() as int);
+  assert(0 <= witness < graph.adjacent_nodes[u].len() as int);
   assert(edge.w > 0);
   let weight = edge.w as int;
   assert(weight >= 0);
@@ -122,6 +122,117 @@ spec fn path_cost(graph: Graph, path: Seq<int>) -> int
   }
 }
 
+spec fn append_vertex(path: Seq<int>, v: int) -> Seq<int> {
+  path.push(v)
+}
+
+proof fn append_vertex_preserves_bounds(graph: Graph, path: Seq<int>, v: int)
+  requires
+    path.len() >= 1,
+    path_nodes_within_bounds(graph, path),
+    0 <= v && v < graph.number_of_nodes as int,
+  ensures
+    path_nodes_within_bounds(graph, append_vertex(path, v))
+{
+  assert forall|i: int|
+    0 <= i < append_vertex(path, v).len() as int ==>
+      0 <= append_vertex(path, v)[i] && append_vertex(path, v)[i] < graph.number_of_nodes as int
+  by {
+    let i = arbitrary();
+    assume(0 <= i < append_vertex(path, v).len() as int);
+    if i < path.len() as int {
+      assert(append_vertex(path, v)[i] == path[i]);
+      assert(0 <= path[i] && path[i] < graph.number_of_nodes as int);
+    } else {
+      assert(i == append_vertex(path, v).len() as int - 1);
+      assert(append_vertex(path, v)[i] == v);
+      assert(0 <= v && v < graph.number_of_nodes as int);
+    }
+  };
+}
+
+proof fn append_vertex_preserves_edges(graph: Graph, path: Seq<int>, v: int)
+  requires
+    is_valid(graph),
+    path.len() >= 1,
+    path_nodes_within_bounds(graph, path),
+    path_edges_exist(graph, path),
+    0 <= v && v < graph.number_of_nodes as int,
+    edge_exists(graph, path[path.len() as int - 1], v),
+  ensures
+    path_edges_exist(graph, append_vertex(path, v))
+{
+  assert forall|i: int|
+    0 <= i && i < append_vertex(path, v).len() as int - 1 ==>
+      edge_exists(graph, append_vertex(path, v)[i], append_vertex(path, v)[i + 1])
+  by {
+    let i = arbitrary();
+    assume(0 <= i && i < append_vertex(path, v).len() as int - 1);
+    if i < path.len() as int - 1 {
+      assert(append_vertex(path, v)[i] == path[i]);
+      assert(append_vertex(path, v)[i + 1] == path[i + 1]);
+      assert(edge_exists(graph, path[i], path[i + 1]));
+    } else {
+      assert(i == append_vertex(path, v).len() as int - 2);
+      assert(append_vertex(path, v)[i] == path[path.len() as int - 1]);
+      assert(append_vertex(path, v)[i + 1] == v);
+      assert(edge_exists(graph, path[path.len() as int - 1], v));
+    }
+  };
+}
+
+proof fn append_vertex_is_path(graph: Graph, start_node: int, path: Seq<int>, v: int)
+  requires
+    is_valid(graph),
+    path.len() >= 1,
+    is_path(graph, start_node, path[path.len() as int - 1], path),
+    0 <= v && v < graph.number_of_nodes as int,
+    edge_exists(graph, path[path.len() as int - 1], v),
+  ensures
+    is_path(graph, start_node, v, append_vertex(path, v))
+{
+  append_vertex_preserves_bounds(graph, path, v);
+  append_vertex_preserves_edges(graph, path, v);
+
+  assert(append_vertex(path, v).len() >= 1);
+  assert(append_vertex(path, v)[0] == path[0]);
+  assert(path[0] == start_node);
+  assert(append_vertex(path, v)[append_vertex(path, v).len() as int - 1] == v);
+
+  assert(is_path(graph, start_node, v, append_vertex(path, v)));
+}
+
+proof fn path_cost_append_vertex(graph: Graph, path: Seq<int>, v: int) -> int
+  requires
+    is_valid(graph),
+    path.len() >= 1,
+    path_nodes_within_bounds(graph, path),
+    path_edges_exist(graph, path),
+    0 <= v && v < graph.number_of_nodes as int,
+    edge_exists(graph, path[path.len() as int - 1], v),
+  ensures
+    path_cost(graph, append_vertex(path, v)) == path_cost(graph, path) + edge_weight(graph, path[path.len() as int - 1], v)
+  decreases
+    path.len()
+{
+  if path.len() == 1 {
+    assert(path_cost(graph, path) == 0);
+    assert(path_cost(graph, append_vertex(path, v)) == edge_weight(graph, path[0], v));
+  } else {
+    let tail = path.subrange(1, path.len() as int);
+    let u = path[0];
+    let next = path[1];
+
+    let result_tail = path_cost_append_vertex(graph, tail, v);
+    assert(path_cost(graph, tail) + edge_weight(graph, tail[tail.len() as int - 1], v) == result_tail);
+
+    assert(path_cost(graph, path) == edge_weight(graph, u, next) + path_cost(graph, tail));
+
+    assert(path_cost(graph, append_vertex(path, v)) == edge_weight(graph, u, next) + path_cost(graph, append_vertex(tail, v)));
+  }
+  path_cost(graph, append_vertex(path, v))
+}
+
 proof fn single_node_path_is_path(graph: Graph, node: int)
   requires
     is_valid(graph),
@@ -199,7 +310,7 @@ spec fn dist_upper_bounds_shortest_paths(graph: Graph, start_node: int, dist: Se
     0 <= start_node && start_node < graph.number_of_nodes as int
 {
   forall|v: int|
-    0 <= v && v < dist.len() as int ==>
+    0 <= v < dist.len() as int ==>
       match dist[v] {
         Some(d) =>
           match sp_dist(graph, start_node, v) {
@@ -215,11 +326,11 @@ spec fn visited_nodes_have_exact_distance(graph: Graph, start_node: int, dist: S
     is_valid(graph),
     dist.len() == graph.number_of_nodes as int,
     visited.len() == graph.number_of_nodes as int,
-    dist.len() == visited.len() as int,
+    dist.len() == visited.len(),
     0 <= start_node && start_node < graph.number_of_nodes as int
 {
   forall|v: int|
-    0 <= v && v < visited.len() as int ==>
+    0 <= v < visited.len() as int ==>
       (!visited[v]) ||
         match dist[v] {
           Some(d) =>
@@ -245,7 +356,7 @@ spec fn dijkstra_state_inv(graph: Graph, start_node: int, dist: Seq<Option<int>>
     is_valid(graph),
     dist.len() == graph.number_of_nodes as int,
     visited.len() == graph.number_of_nodes as int,
-    dist.len() == visited.len() as int,
+    dist.len() == visited.len(),
     0 <= start_node && start_node < graph.number_of_nodes as int
 {
   dist_upper_bounds_shortest_paths(graph, start_node, dist)
@@ -359,7 +470,7 @@ proof fn dijkstra_init_state_inv(graph: Graph, start_node: int)
 
   assert(dist.len() == graph.number_of_nodes as int);
   assert(visited.len() == graph.number_of_nodes as int);
-  assert(dist.len() == visited.len() as int);
+  assert(dist.len() == visited.len());
 
   assert(dist[start_node] == Some(0));
   assert(start_distance_is_zero(graph, start_node, dist));
@@ -477,14 +588,14 @@ proof fn dijkstra_init_state_inv(graph: Graph, start_node: int)
 
 spec fn has_unvisited_nodes(dist: Seq<Option<int>>, visited: Seq<bool>) -> bool
   recommends
-    dist.len() == visited.len() as int,
+    dist.len() == visited.len(),
 {
   exists|i: int| 0 <= i < dist.len() as int && !visited[i] && dist[i] matches Some(_)
 }
 
 proof fn has_unvisited_nodes_lemma(dist: Seq<Option<int>>, visited: Seq<bool>) -> bool
   requires
-    dist.len() == visited.len() as int,
+    dist.len() == visited.len(),
   ensures
     exists|i: int| 0 <= i < dist.len() as int && !visited[i] && dist[i] matches Some(_)
 {
@@ -496,31 +607,31 @@ pub fn has_unvisited_nodes_proof_tests() {
     // Test case 1: Has unvisited nodes with distances
     let dist = seq![Some(0), Some(5), None, Some(3)];
     let visited = seq![true, false, false, false];
-    assert(dist.len() == visited.len() as int);
+    assert(dist.len() == visited.len());
     assert(has_unvisited_nodes(dist, visited));
 
     // Test case 2: All nodes visited
     let dist = seq![Some(0), Some(5), Some(3)];
     let visited = seq![true, true, true];
-    assert(dist.len() == visited.len() as int);
+    assert(dist.len() == visited.len());
     assert(!has_unvisited_nodes(dist, visited));
 
     // Test case 3: Unvisited nodes but no distances
     let dist = seq![Some(0), None, None];
     let visited = seq![true, false, false];
-    assert(dist.len() == visited.len() as int);
+    assert(dist.len() == visited.len());
     assert(!has_unvisited_nodes(dist, visited));
 
     // Test case 4: Empty sequences
     let dist = Seq::empty();
     let visited = Seq::empty();
-    assert(dist.len() == visited.len() as int);
+    assert(dist.len() == visited.len());
     assert(!has_unvisited_nodes(dist, visited));
 
     // Test case 5: Single unvisited node with distance
     let dist = seq![Some(0)];
     let visited = seq![false];
-    assert(dist.len() == visited.len() as int);
+    assert(dist.len() == visited.len());
     assert(has_unvisited_nodes(dist, visited)) by {
       assert(dist[0] matches Some(_));
       assert(!visited[0]);
@@ -542,7 +653,7 @@ spec fn is_cand(dist: Seq<Option<int>>, visited: Seq<bool>, i: int) -> bool
 proof fn is_cand_lemma(dist: Seq<Option<int>>, visited: Seq<bool>, i: int)
   requires
     0 <= i < dist.len() as int,
-    dist.len() == visited.len() as int,
+    dist.len() == visited.len(),
   ensures
     is_cand(dist, visited, i) <==> (dist[i] matches Some(_) && !visited[i])
 {
@@ -850,7 +961,7 @@ pub fn unvisited_core_proof_tests() {
 
 spec fn find_min_unvisited_spec(dist: Seq<Option<int>>, visited: Seq<bool>) -> Option<int>
   recommends
-    dist.len() == visited.len() as int
+    dist.len() == visited.len()
 {
   if !has_unvisited_nodes(dist, visited) {
     Option::None
@@ -862,7 +973,7 @@ spec fn find_min_unvisited_spec(dist: Seq<Option<int>>, visited: Seq<bool>) -> O
 // Lemma characterizing find_min_unvisited_spec: returns the best unvisited candidate if one exists
 proof fn find_min_unvisited_spec_lemma(dist: Seq<Option<int>>, visited: Seq<bool>)
   requires
-    dist.len() == visited.len() as int,
+    dist.len() == visited.len(),
     has_unvisited_nodes(dist, visited),
   ensures
     match find_min_unvisited_spec(dist, visited) {
@@ -950,8 +1061,8 @@ spec fn dijkstra_core_spec(graph: Graph, dist: Seq<Option<int>>, visited: Seq<bo
     dist.len() == graph.number_of_nodes as int,
     visited.len() == graph.number_of_nodes as int,
     parent.len() == graph.number_of_nodes as int,
-    dist.len() == visited.len() as int,
-    visited.len() == parent.len() as int,
+    dist.len() == visited.len(),
+    visited.len() == parent.len(),
     0 <= start_node && start_node < graph.number_of_nodes as int,
     0 <= destination_node && destination_node < graph.number_of_nodes as int,
     dijkstra_state_inv(graph, start_node, dist, visited),
@@ -1077,6 +1188,167 @@ spec fn min_updated_distance_helper(graph: Graph, dist: Seq<Option<int>>, u: int
   }
 }
 
+proof fn min_updated_distance_helper_witness(graph: Graph, dist: Seq<Option<int>>, u: int, v: int, d_u: int, i: int)
+  requires
+    is_valid(graph),
+    dist.len() == graph.number_of_nodes as int,
+    0 <= u < graph.number_of_nodes as int,
+    0 <= v < graph.number_of_nodes as int,
+    0 <= i <= graph.adjacent_nodes[u].len() as int,
+  ensures
+    match min_updated_distance_helper(graph, dist, u, v, d_u, i) {
+      Some(result) =>
+        exists|edge_idx: int|
+          i <= edge_idx && edge_idx < graph.adjacent_nodes[u].len() as int
+            && graph.adjacent_nodes[u][edge_idx].to == v as usize
+            && result == d_u + (graph.adjacent_nodes[u][edge_idx].w as int),
+      None => true
+    }
+    && ((exists|edge_idx: int|
+          i <= edge_idx && edge_idx < graph.adjacent_nodes[u].len() as int
+            && graph.adjacent_nodes[u][edge_idx].to == v as usize
+            && match dist[v] {
+              None => true,
+              Some(d_v) => d_u + (graph.adjacent_nodes[u][edge_idx].w as int) < d_v,
+            }) ==> (min_updated_distance_helper(graph, dist, u, v, d_u, i) matches Some(_)))
+  decreases
+    graph.adjacent_nodes[u].len() as int - i
+{
+  if i >= graph.adjacent_nodes[u].len() as int {
+    assert(min_updated_distance_helper(graph, dist, u, v, d_u, i) == None);
+  } else {
+    let edge = graph.adjacent_nodes[u][i];
+    let candidate: Option<int> = if edge.to == v as usize {
+      match dist[v] {
+        None => Some(d_u + (edge.w as int)),
+        Some(d_v) => if d_u + (edge.w as int) < d_v {
+          Some(d_u + (edge.w as int))
+        } else {
+          None
+        }
+      }
+    } else {
+      None
+    };
+    let rest: Option<int> = min_updated_distance_helper(graph, dist, u, v, d_u, i + 1);
+
+    min_updated_distance_helper_witness(graph, dist, u, v, d_u, i + 1);
+
+    let improving_exists = exists|edge_idx: int|
+      i <= edge_idx && edge_idx < graph.adjacent_nodes[u].len() as int
+        && graph.adjacent_nodes[u][edge_idx].to == v as usize
+        && match dist[v] {
+          None => true,
+          Some(d_v) => d_u + (graph.adjacent_nodes[u][edge_idx].w as int) < d_v,
+        };
+
+    match (candidate, rest) {
+      (Some(c), Some(r)) => {
+        let result = if c < r { c } else { r };
+        assert(min_updated_distance_helper(graph, dist, u, v, d_u, i) == Some(result));
+        if c < r {
+          assert(result == c);
+          assert(exists|edge_idx: int|
+            i <= edge_idx && edge_idx < graph.adjacent_nodes[u].len() as int
+              && graph.adjacent_nodes[u][edge_idx].to == v as usize
+              && result == d_u + (graph.adjacent_nodes[u][edge_idx].w as int)) by {
+            let edge_idx = i;
+            assert(i <= edge_idx);
+            assert(edge_idx < graph.adjacent_nodes[u].len() as int);
+            assert(graph.adjacent_nodes[u][edge_idx].to == v as usize);
+            assert(result == d_u + (graph.adjacent_nodes[u][edge_idx].w as int));
+          };
+        } else {
+          assert(result == r);
+          assert(exists|edge_idx: int|
+            i <= edge_idx && edge_idx < graph.adjacent_nodes[u].len() as int
+              && graph.adjacent_nodes[u][edge_idx].to == v as usize
+              && result == d_u + (graph.adjacent_nodes[u][edge_idx].w as int)) by {
+            let witness = choose|edge_idx: int|
+              i + 1 <= edge_idx && edge_idx < graph.adjacent_nodes[u].len() as int
+                && graph.adjacent_nodes[u][edge_idx].to == v as usize
+                && r == d_u + (graph.adjacent_nodes[u][edge_idx].w as int);
+            let edge_idx = witness;
+            assert(i <= edge_idx);
+            assert(edge_idx < graph.adjacent_nodes[u].len() as int);
+            assert(graph.adjacent_nodes[u][edge_idx].to == v as usize);
+            assert(result == d_u + (graph.adjacent_nodes[u][edge_idx].w as int));
+          };
+        }
+        if improving_exists {
+          assert(min_updated_distance_helper(graph, dist, u, v, d_u, i) matches Some(_));
+        }
+      }
+      (Some(c), None) => {
+        assert(min_updated_distance_helper(graph, dist, u, v, d_u, i) == Some(c));
+        assert(exists|edge_idx: int|
+          i <= edge_idx && edge_idx < graph.adjacent_nodes[u].len() as int
+            && graph.adjacent_nodes[u][edge_idx].to == v as usize
+            && c == d_u + (graph.adjacent_nodes[u][edge_idx].w as int)) by {
+          let edge_idx = i;
+          assert(i <= edge_idx);
+          assert(edge_idx < graph.adjacent_nodes[u].len() as int);
+          assert(graph.adjacent_nodes[u][edge_idx].to == v as usize);
+        };
+        if improving_exists {
+          assert(min_updated_distance_helper(graph, dist, u, v, d_u, i) matches Some(_));
+        }
+      }
+      (None, Some(r)) => {
+        assert(min_updated_distance_helper(graph, dist, u, v, d_u, i) == Some(r));
+        let witness = choose|edge_idx: int|
+          i + 1 <= edge_idx && edge_idx < graph.adjacent_nodes[u].len() as int
+            && graph.adjacent_nodes[u][edge_idx].to == v as usize
+            && r == d_u + (graph.adjacent_nodes[u][edge_idx].w as int);
+        let edge_idx = witness;
+        assert(i <= edge_idx);
+        assert(edge_idx < graph.adjacent_nodes[u].len() as int);
+        assert(graph.adjacent_nodes[u][edge_idx].to == v as usize);
+        if improving_exists {
+          assert(min_updated_distance_helper(graph, dist, u, v, d_u, i) matches Some(_));
+        }
+      }
+      (None, None) => {
+        assert(min_updated_distance_helper(graph, dist, u, v, d_u, i) == None);
+        assert(!improving_exists);
+      }
+    }
+  }
+}
+
+proof fn get_updated_distance_witness(graph: Graph, dist: Seq<Option<int>>, u: int, v: int)
+  requires
+    is_valid(graph),
+    dist.len() == graph.number_of_nodes as int,
+    0 <= u < graph.number_of_nodes as int,
+    0 <= v < graph.number_of_nodes as int,
+    dist[u] matches Some(_),
+    should_update_edge(graph, dist, u, v),
+  ensures
+    match get_updated_distance(graph, dist, u, v) {
+      Some(result) =>
+        exists|edge_idx: int|
+          0 <= edge_idx < graph.adjacent_nodes[u].len() as int
+            && graph.adjacent_nodes[u][edge_idx].to == v as usize
+            && result == dist[u].unwrap() + (graph.adjacent_nodes[u][edge_idx].w as int),
+      None => false
+    }
+{
+  let d_u = dist[u].unwrap();
+  min_updated_distance_helper_witness(graph, dist, u, v, d_u, 0);
+
+  assert(get_updated_distance(graph, dist, u, v) matches Some(_)) by {
+    let improving_edge = choose|edge_idx: int|
+      0 <= edge_idx < graph.adjacent_nodes[u].len() as int
+        && graph.adjacent_nodes[u][edge_idx].to == v as usize
+        && match dist[v] {
+          None => true,
+          Some(d_v) => d_u + (graph.adjacent_nodes[u][edge_idx].w as int) < d_v,
+        };
+    assert(min_updated_distance_helper(graph, dist, u, v, d_u, 0) matches Some(_));
+  };
+}
+
 spec fn update_edges_spec(graph: Graph, dist: Seq<Option<int>>, visited: Seq<bool>, parent: Seq<Option<int>>, u: int) -> (Seq<Option<int>>, Seq<Option<int>>)
   requires
     is_valid(graph),
@@ -1133,8 +1405,8 @@ proof fn update_edges_preserves_state_inv(
     dist.len() == graph.number_of_nodes as int,
     visited.len() == graph.number_of_nodes as int,
     parent.len() == graph.number_of_nodes as int,
-    dist.len() == visited.len() as int,
-    visited.len() == parent.len() as int,
+    dist.len() == visited.len(),
+    visited.len() == parent.len(),
     0 <= start_node && start_node < graph.number_of_nodes as int,
     0 <= u && u < graph.number_of_nodes as int,
     dist[u] matches Some(_),
