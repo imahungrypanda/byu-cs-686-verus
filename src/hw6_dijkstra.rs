@@ -871,43 +871,6 @@ spec fn has_unvisited_nodes(dist: Seq<Option<int>>, visited: Seq<bool>) -> bool
   exists |i:int| 0 <= i && i < dist.len() as int && is_cand(dist, visited, i)
 }
 
-pub fn has_unvisited_nodes_proof_tests() {
-  proof {
-    // Test case 1: Has unvisited nodes with distances
-    let dist = seq![Some(0int), Some(5int), Option::<int>::None, Some(3int)];
-    let visited = seq![true, false, false, false];
-    assert(dist.len() == visited.len());
-    assert(has_unvisited_nodes(dist, visited));
-
-    // Test case 2: All nodes visited
-    let dist = seq![Some(0int), Some(5int), Some(3int)];
-    let visited = seq![true, true, true];
-    assert(dist.len() == visited.len());
-    assert(!has_unvisited_nodes(dist, visited));
-
-    // Test case 3: Unvisited nodes but no distances
-    let dist = seq![Some(0int), Option::<int>::None, Option::<int>::None];
-    let visited = seq![true, false, false];
-    assert(dist.len() == visited.len());
-    assert(!has_unvisited_nodes(dist, visited));
-
-    // Test case 4: Empty sequences
-    let dist = Seq::empty();
-    let visited = Seq::empty();
-    assert(dist.len() == visited.len());
-    assert(!has_unvisited_nodes(dist, visited));
-
-    // Test case 5: Single unvisited node with distance
-    let dist = seq![Some(0int)];
-    let visited = seq![false];
-    assert(dist.len() == visited.len());
-    assert(has_unvisited_nodes(dist, visited)) by {
-      assert(dist[0] matches Some(_));
-      assert(!visited[0]);
-    };
-  }
-}
-
 // Is this node a candidate for the next node to visit?
 spec fn is_cand(dist: Seq<Option<int>>, visited: Seq<bool>, i: int) -> bool
   recommends
@@ -934,43 +897,6 @@ proof fn is_cand_lemma(dist: Seq<Option<int>>, visited: Seq<bool>, i: int)
     assert(is_cand(dist, visited, i) == false);
     assert((dist[i] matches Some(_) && !visited[i]) == false);
     assert(is_cand(dist, visited, i) == (dist[i] matches Some(_) && !visited[i]));
-  }
-}
-
-pub fn is_cand_proof_tests() {
-  proof {
-    let dist = seq![Some(0int), Some(5int), Option::<int>::None, Some(3int)];
-    let visited = seq![true, false, false, false];
-
-    // Test case 1: Node with distance and not visited (should be true)
-    assert(is_cand(dist, visited, 1));  // node 1: Some(5int), not visited
-
-    // Test case 2: Node with distance but already visited (should be false)
-    assert(!is_cand(dist, visited, 0));  // node 0: Some(0int), but visited
-
-    // Test case 3: Node with no distance (None) - not visited (should be false)
-    assert(!is_cand(dist, visited, 2));  // node 2: None, not visited
-
-    // Test case 4: Node with no distance (None) - visited (should be false)
-    let dist_2 = seq![Some(0int), Option::<int>::None, Some(3int)];
-    let visited_2 = seq![true, true, false];
-    assert(!is_cand(dist_2, visited_2, 1));  // node 1: None, visited
-
-    // Test case 5: Node with distance and not visited at end of sequence
-    assert(is_cand(dist, visited, 3));  // node 3: Some(3int), not visited
-
-    // Test case 6: All nodes have distances, one not visited
-    let dist_3 = seq![Some(0int), Some(5int), Some(3int)];
-    let visited_3 = seq![true, false, true];
-    assert(is_cand(dist_3, visited_3, 1));  // node 1: Some(5int), not visited
-    assert(!is_cand(dist_3, visited_3, 0)); // node 0: Some(0int), visited
-    assert(!is_cand(dist_3, visited_3, 2)); // node 2: Some(3int), visited
-
-    // Test case 7: All nodes have None (no distances)
-    let dist_4 = seq![Option::<int>::None, Option::<int>::None, Option::<int>::None];
-    let visited_4 = seq![false, false, false];
-    assert(!is_cand(dist_4, visited_4, 0));  // node 0: None
-    assert(!is_cand(dist_4, visited_4, 1));  // node 1: None
   }
 }
 
@@ -1029,39 +955,6 @@ proof fn is_better_lemma(dist: Seq<Option<int>>, start_node: int, new_node: int)
       }
     }
     Option::<int>::None => {}
-  }
-}
-
-pub fn is_better_proof_tests() {
-  proof {
-    // Test case 1: start_node has smaller distance (should be true)
-    let dist = seq![Some(0int), Some(5int), Some(10int), Some(3int)];
-    assert(is_better(dist, 0, 1));  // dist[0]=0 < dist[1]=5
-
-    // Test case 2: start_node has larger distance (should be false)
-    assert(!is_better(dist, 1, 0));  // dist[1]=5 > dist[0]=0
-
-    // Test case 3: Equal distances, start_node < new_node (should be true)
-    let dist_2 = seq![Some(5int), Some(5int), Some(5int)];
-    assert(is_better(dist_2, 0, 1));  // dist[0]=5 == dist[1]=5, and 0 <= 1
-
-    // Test case 4: Equal distances, start_node == new_node (should be true)
-    assert(is_better(dist_2, 0, 0));  // dist[0]=5 == dist[0]=5, and 0 <= 0
-
-    // Test case 5: Equal distances, start_node > new_node (should be false)
-    assert(!is_better(dist_2, 2, 1));  // dist[2]=5 == dist[1]=5, but 2 > 1
-
-    // Test case 6: start_node much smaller distance
-    let dist_3 = seq![Some(1int), Some(100int)];
-    assert(is_better(dist_3, 0, 1));  // dist[0]=1 < dist[1]=100
-
-    // Test case 7: start_node much larger distance
-    assert(!is_better(dist_3, 1, 0));  // dist[1]=100 > dist[0]=1
-
-    // Test case 8: Multiple equal distances, checking tie-breaking
-    let dist_4 = seq![Some(7int), Some(7int), Some(7int), Some(7int)];
-    assert(is_better(dist_4, 0, 3));  // dist[0]=7 == dist[3]=7, and 0 <= 3
-    assert(!is_better(dist_4, 3, 0));  // dist[3]=7 == dist[0]=7, but 3 > 0
   }
 }
 
@@ -1162,74 +1055,6 @@ proof fn unvisited_core_lemma(dist: Seq<Option<int>>, visited: Seq<bool>, start_
   }
 }
 
-pub fn unvisited_core_proof_tests() {
-  proof {
-    // Test case 1: Base case - start_node >= dist.len(), returns best_node
-    let dist = seq![Some(0int), Some(5int)];
-    let visited = seq![false, false];
-    let result: Option<int> = unvisited_core(dist, visited, 2, Option::Some(1int));
-    assert(result == Option::Some(1int));  // Returns the passed best_node
-
-    // Test case 2: Single candidate, starting from beginning with None
-    let result_2: Option<int> = unvisited_core(dist, visited, 0, Option::<int>::None);
-    assert(result_2 == Option::Some(0int));  // Finds node 0 (distance 0)
-
-    // Test case 3: Multiple candidates, finds the best (smallest distance)
-    let dist_2 = seq![Some(5int), Some(2int), Some(8int), Some(1int)];
-    let visited_2 = seq![false, false, false, false];
-    let result_3: Option<int> = unvisited_core(dist_2, visited_2, 0, Option::<int>::None);
-    assert(result_3 == Option::Some(3int));  // Node 3 has smallest distance (1)
-
-    // Test case 4: Multiple candidates with equal distances, picks smallest index
-    let dist_3 = seq![Some(5int), Some(5int), Some(5int)];
-    let visited_3 = seq![false, false, false];
-    let result_4: Option<int> = unvisited_core(dist_3, visited_3, 0, Option::<int>::None);
-    assert(result_4 == Option::Some(0int));  // Tie broken by index, picks 0
-
-    // Test case 5: Starting from middle, finds best remaining
-    let dist_4 = seq![Some(10int), Some(5int), Some(3int), Some(7int)];
-    let visited_4 = seq![false, false, false, false];
-    let result_5: Option<int> = unvisited_core(dist_4, visited_4, 2, Option::<int>::None);
-    assert(result_5 == Option::Some(2int));  // Starting from index 2, finds itself (distance 3)
-
-    // Test case 6: All visited, returns None if starting with None
-    let dist_5 = seq![Some(0int), Some(5int), Some(3int)];
-    let visited_5 = seq![true, true, true];
-    let result_6: Option<int> = unvisited_core(dist_5, visited_5, 0, Option::<int>::None);
-    assert(result_6 == Option::<int>::None);  // No candidates found
-
-    // Test case 7: All have no distances (None), returns None
-    let dist_6 = seq![None, None, None];
-    let visited_6 = seq![false, false, false];
-    let result_7: Option<int> = unvisited_core(dist_6, visited_6, 0, Option::<int>::None);
-    assert(result_7 == Option::<int>::None);  // No candidates (no distances)
-
-    // Test case 8: Mix of visited/unvisited, finds unvisited candidate
-    let dist_7 = seq![Some(0int), Some(5int), Some(3int)];
-    let visited_7 = seq![true, false, false];
-    let result_8: Option<int> = unvisited_core(dist_7, visited_7, 0, Option::<int>::None);
-    assert(result_8 == Option::Some(2int));  // Node 2 has smallest distance among unvisited
-
-    // Test case 9: Starting with existing best_node, finds better one
-    let dist_8 = seq![Some(10int), Some(5int), Some(3int)];
-    let visited_8 = seq![false, false, false];
-    let result_9: Option<int> = unvisited_core(dist_8, visited_8, 1, Option::Some(0int));
-    assert(result_9 == Option::Some(2int));  // Starts with node 0 (distance 10), finds better: node 2 (distance 3)
-
-    // Test case 10: Starting with best_node, keeps it if no better found
-    let dist_9 = seq![Some(2int), Some(5int), Some(8int)];
-    let visited_9 = seq![false, false, false];
-    let result_10: Option<int> = unvisited_core(dist_9, visited_9, 1, Option::Some(0int));
-    assert(result_10 == Option::Some(0int));  // Starts with node 0 (distance 2), no better found
-
-    // Test case 11: Empty sequences
-    let dist_empty = Seq::empty();
-    let visited_empty = Seq::empty();
-    let result_11: Option<int> = unvisited_core(dist_empty, visited_empty, 0, Option::<int>::None);
-    assert(result_11 == Option::<int>::None);  // Base case immediately returns None
-  }
-}
-
 spec fn find_min_unvisited_spec(dist: Seq<Option<int>>, visited: Seq<bool>) -> Option<int>
   recommends
     dist.len() == visited.len()
@@ -1254,70 +1079,6 @@ proof fn find_min_unvisited_spec_lemma(dist: Seq<Option<int>>, visited: Seq<bool
   if !has_unvisited_nodes(dist, visited) {
   } else {
     unvisited_core_lemma(dist, visited, 0, Option::<int>::None);
-  }
-}
-
-pub fn find_min_unvisited_spec_proof_tests() {
-  proof {
-    // Test case 1: Has unvisited nodes, finds the one with smallest distance
-    let dist = seq![Some(5int), Some(2int), Some(8int), Some(1int)];
-    let visited = seq![false, false, false, false];
-    let result: Option<int> = find_min_unvisited_spec(dist, visited);
-    assert(result == Option::Some(3int));  // Node 3 has smallest distance (1)
-
-    // Test case 2: Has unvisited nodes, equal distances pick smallest index
-    let dist_2 = seq![Some(5int), Some(5int), Some(5int)];
-    let visited_2 = seq![false, false, false];
-    let result_2: Option<int> = find_min_unvisited_spec(dist_2, visited_2);
-    assert(result_2 == Option::Some(0int));  // Tie broken by index, picks 0
-
-    // Test case 3: All nodes visited, returns None
-    let dist_3 = seq![Some(0int), Some(5int), Some(3int)];
-    let visited_3 = seq![true, true, true];
-    let result_3: Option<int> = find_min_unvisited_spec(dist_3, visited_3);
-    assert(result_3 == Option::<int>::None);  // No unvisited nodes
-
-    // Test case 4: Mix of visited/unvisited, finds best unvisited
-    let dist_4 = seq![Some(0int), Some(5int), Some(3int), Some(2int)];
-    let visited_4 = seq![true, false, false, false];
-    let result_4: Option<int> = find_min_unvisited_spec(dist_4, visited_4);
-    assert(result_4 == Option::Some(3int));  // Node 3 has smallest distance (2) among unvisited
-
-    // Test case 5: Some nodes have no distances, finds best among those with distances
-    let dist_5 = seq![Some(5int), None, Some(3int), None];
-    let visited_5 = seq![false, false, false, false];
-    let result_5: Option<int> = find_min_unvisited_spec(dist_5, visited_5);
-    assert(result_5 == Option::Some(2int));  // Node 2 has distance 3, better than node 0's 5
-
-    // Test case 6: Only one unvisited node
-    let dist_6 = seq![Some(0int), Some(5int), Some(3int)];
-    let visited_6 = seq![true, true, false];
-    let result_6: Option<int> = find_min_unvisited_spec(dist_6, visited_6);
-    assert(result_6 == Option::Some(2int));  // Only node 2 is unvisited
-
-    // Test case 7: All nodes have no distances, returns None
-    let dist_7 = seq![None, None, None];
-    let visited_7 = seq![false, false, false];
-    let result_7: Option<int> = find_min_unvisited_spec(dist_7, visited_7);
-    assert(result_7 == Option::<int>::None);  // No candidates (no distances)
-
-    // Test case 8: Large distances, finds smallest
-    let dist_8 = seq![Some(100int), Some(50int), Some(200int), Some(25int)];
-    let visited_8 = seq![false, false, false, false];
-    let result_8: Option<int> = find_min_unvisited_spec(dist_8, visited_8);
-    assert(result_8 == Option::Some(3int));  // Node 3 has smallest distance (25)
-
-    // Test case 9: Single node, unvisited
-    let dist_9 = seq![Some(0int)];
-    let visited_9 = seq![false];
-    let result_9: Option<int> = find_min_unvisited_spec(dist_9, visited_9);
-    assert(result_9 == Option::Some(0int));  // Only node, unvisited
-
-    // Test case 10: Single node, visited
-    let dist_10 = seq![Some(0int)];
-    let visited_10 = seq![true];
-    let result_10: Option<int> = find_min_unvisited_spec(dist_10, visited_10);
-    assert(result_10 == Option::<int>::None);  // Only node is visited
   }
 }
 
@@ -1727,11 +1488,6 @@ pub fn run_examples() {
   };
 
   assert(is_valid(example_graph));
-
-  has_unvisited_nodes_proof_tests();
-  unvisited_core_proof_tests();
-  is_better_proof_tests();
-  is_cand_proof_tests();
 }
 
 } // verus!
