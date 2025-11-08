@@ -2,8 +2,6 @@
 mod hw0;
 mod hw1_basic_specifications;
 mod hw2_recursion_and_loops;
-mod hw3;
-mod hw4;
 mod hw6_dijkstra;
 
 mod class;
