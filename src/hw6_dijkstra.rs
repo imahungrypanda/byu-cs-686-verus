@@ -1375,7 +1375,7 @@ spec fn should_update_edge(graph: Graph, dist: Seq<Option<int>>, u: int, v: int)
         Option::<int>::None => {
           exists|i: int|
             0 <= i && i < graph.adjacent_nodes[u].len() as int &&
-            graph.adjacent_nodes[u][i].to == v as usize
+            #[trigger] graph.adjacent_nodes[u][i].to == v as usize
         }
         Some(d_v) => {
           exists|i: int|
@@ -1429,18 +1429,18 @@ spec fn min_updated_distance_helper(graph: Graph, dist: Seq<Option<int>>, u: int
         Some(d_v) => if d_u + (edge.w as int) < d_v {
           Some(d_u + (edge.w as int))
         } else {
-          None
+          Option::<int>::None
         }
       }
     } else {
-      None
+      Option::<int>::None
     };
     let rest: Option<int> = min_updated_distance_helper(graph, dist, u, v, d_u, i + 1);
     match (candidate, rest) {
       (Some(c), Some(r)) => Some(if c < r { c } else { r }),
       (Some(c), Option::<int>::None) => Some(c),
       (Option::<int>::None, Some(r)) => Some(r),
-      (Option::<int>::None, Option::<int>::None) => Option::<int>::None
+      (Option::<int>::None, Option::<int>::None) => Option::<int>::None,
     }
   }
 }

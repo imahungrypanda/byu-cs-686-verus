@@ -30,12 +30,6 @@ fn main() {
     hw2_recursion_and_loops::problem2::run_examples();
     hw2_recursion_and_loops::problem3::run_examples();
 
-    // Run homework 3 examples (when implemented)
-    // hw3::run_examples();
-
-    // Run homework 4 examples (when implemented)
-    // hw4::run_examples();
-
     // Run homework 6 examples (Dijkstra's algorithm)
     hw6_dijkstra::run_examples();
 
