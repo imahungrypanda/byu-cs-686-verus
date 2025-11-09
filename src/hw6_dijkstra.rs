@@ -129,10 +129,15 @@ proof fn path_cost_unfold(graph: Graph, path: Seq<int>)
   assert(path_edges_exist(graph, tail));
 
   assert(edge_exists(graph, path[0], path[1])) by {
-    assert(path_edges_exist(graph, path));
-    assert(path.len() >= 2);
-    assert(0 <= 0 && 0 < path.len() as int - 1);
-    assert(path_next(path, 0) == path[1]);
+    let edges_exist = path_edges_exist(graph, path);
+    assert(edges_exist);
+    if edges_exist {
+      let i: int = 0;
+      assert(0 <= i && i < path.len() as int - 1);
+      assert(edge_exists(graph, path[i], path_next(path, i)));
+      assert(path[i] == path[0]);
+      assert(path_next(path, i) == path[1]);
+    }
   };
   let len_ghost = path.len();
   assert(len_ghost >= 2);
@@ -152,6 +157,74 @@ proof fn path_cost_unfold(graph: Graph, path: Seq<int>)
   };
   assert(path_cost(graph, tail) == path_cost_core(graph, tail, tail.len()));
   assert(path_cost(graph, path) == edge_weight(graph, path[0], path[1]) + path_cost(graph, tail));
+}
+
+proof fn edge_weight_non_negative(graph: Graph, u: int, v: int)
+  requires
+    is_valid(graph),
+    0 <= u && u < graph.number_of_nodes as int,
+    0 <= v && v < graph.number_of_nodes as int,
+    edge_exists(graph, u, v)
+  ensures
+    edge_weight(graph, u, v) >= 0
+{
+  let idx = choose|i: int|
+    0 <= i && i < graph.adjacent_nodes[u].len() as int
+      && graph.adjacent_nodes[u][i].to == v as usize;
+  let weight_u64 = graph.adjacent_nodes[u][idx].w;
+  assert(weight_u64 as int >= 0);
+}
+
+proof fn path_first_edge_exists(graph: Graph, path: Seq<int>)
+  requires
+    path.len() >= 2,
+    path_nodes_within_bounds(graph, path),
+    path_edges_exist(graph, path)
+  ensures
+    edge_exists(graph, path[0], path[1])
+{
+  let edges_exist = path_edges_exist(graph, path);
+  assert(edges_exist);
+  if edges_exist {
+    let i: int = 0;
+    assert(0 <= i && i < path.len() as int - 1);
+    assert(edge_exists(graph, path[i], path_next(path, i)));
+    assert(path[i] == path[0]);
+    assert(path_next(path, i) == path[1]);
+    assert(edge_exists(graph, path[0], path[1]));
+  }
+}
+
+proof fn path_cost_non_negative(graph: Graph, path: Seq<int>)
+  requires
+    is_valid(graph),
+    path.len() >= 1,
+    path_nodes_within_bounds(graph, path),
+    path_edges_exist(graph, path)
+  ensures
+    path_cost(graph, path) >= 0
+  decreases
+    path.len()
+{
+  if path.len() == 1 {
+    assert(path_cost(graph, path) == 0);
+    assert(path_cost(graph, path) >= 0);
+  } else {
+    let tail = path.subrange(1, path.len() as int);
+    path_tail_preserves_bounds(graph, path);
+    path_tail_preserves_edges(graph, path);
+    path_cost_non_negative(graph, tail);
+    path_cost_unfold(graph, path);
+    path_first_edge_exists(graph, path);
+    edge_weight_non_negative(graph, path[0], path[1]);
+    let edge_cost = edge_weight(graph, path[0], path[1]);
+    let tail_cost = path_cost(graph, tail);
+    assert(edge_cost >= 0);
+    assert(tail_cost >= 0);
+    assert(path_cost(graph, path) == edge_cost + tail_cost);
+    assert(edge_cost + tail_cost >= 0);
+    assert(path_cost(graph, path) >= 0);
+  }
 }
 
 spec fn is_path(graph: Graph, start_node: int, destination_node: int, path: Seq<int>) -> bool {
@@ -500,52 +573,104 @@ proof fn sp_dist_upper_bound_for_path(graph: Graph, start_node: int, destination
     }
 {
   if start_node == destination_node {
-    assert(sp_dist(graph, start_node, destination_node) == Some(0int));
-    assert(path_cost(graph, path) >= 0);
+    let shortest = sp_dist(graph, start_node, destination_node);
+    assert(shortest == Some(0int));
+    match shortest {
+      Some(d) => {
+        assert(d == 0);
+        let path_is_path = is_path(graph, start_node, destination_node, path);
+        assert(path_is_path);
+        if path_is_path {
+          assert(path_nodes_within_bounds(graph, path));
+          assert(path_edges_exist(graph, path));
+        }
+        path_cost_non_negative(graph, path);
+      }
+      Option::<int>::None => {
+        assert(false);
+      }
+    }
   } else {
-    assert(path.len() >= 1);
-    assert(path_nodes_within_bounds(graph, path));
-    assert(path_edges_exist(graph, path));
+    let witness = sp_dist_min_witness(graph, start_node, destination_node, path);
 
+    assert(match sp_dist(graph, start_node, destination_node) {
+      Some(d) => d <= path_cost(graph, path),
+      Option::<int>::None => false,
+    }) by {
+      match sp_dist(graph, start_node, destination_node) {
+        Some(d) => {
+          assert(d == path_cost(graph, witness));
+          assert(path_cost(graph, witness) <= path_cost(graph, path));
+        }
+        Option::<int>::None => {
+          assert(false);
+        }
+      }
+    };
+  }
+}
+
+proof fn sp_dist_min_witness(graph: Graph, start_node: int, destination_node: int, path: Seq<int>) -> (witness: Seq<int>)
+  requires
+    is_valid(graph),
+    0 <= start_node && start_node < graph.number_of_nodes as int,
+    0 <= destination_node && destination_node < graph.number_of_nodes as int,
+    is_path(graph, start_node, destination_node, path)
+  ensures
+    is_path(graph, start_node, destination_node, witness)
+      && sp_dist(graph, start_node, destination_node) == Some(path_cost(graph, witness))
+      && path_cost(graph, witness) <= path_cost(graph, path)
+{
+  if start_node == destination_node {
+    single_node_path_is_path(graph, start_node);
+    single_node_path_cost_zero(graph, start_node);
+    let result = seq![start_node];
+    assert(is_path(graph, start_node, destination_node, result));
+    assert(sp_dist(graph, start_node, destination_node) == Some(0int));
+    assert(path_cost(graph, result) == 0);
+    let path_is_path = is_path(graph, start_node, destination_node, path);
+    assert(path_is_path);
+    if path_is_path {
+      assert(path_nodes_within_bounds(graph, path));
+      assert(path_edges_exist(graph, path));
+    }
+    path_cost_non_negative(graph, path);
+    assert(path_cost(graph, result) <= path_cost(graph, path));
+    result
+  } else {
     assert(exists|candidate: Seq<int>| is_path(graph, start_node, destination_node, candidate)) by {
       let candidate = path;
       assert(is_path(graph, start_node, destination_node, candidate));
     };
 
-    let witness = choose|candidate: Seq<int>|
+    let result = choose|candidate: Seq<int>|
       is_path(graph, start_node, destination_node, candidate)
-        && forall|other: Seq<int>| is_path(graph, start_node, destination_node, other) ==>
-          path_cost(graph, candidate) <= path_cost(graph, other);
+        && forall|other: Seq<int>| #![trigger is_path(graph, start_node, destination_node, other)]
+          is_path(graph, start_node, destination_node, other) ==> path_cost(graph, candidate) <= path_cost(graph, other);
 
-    let witness_is_path = is_path(graph, start_node, destination_node, witness);
-    let witness_forall = forall|other: Seq<int>| is_path(graph, start_node, destination_node, other) ==>
-      path_cost(graph, witness) <= path_cost(graph, other);
-    assert(witness_is_path && witness_forall);
-    assert(is_path(graph, start_node, destination_node, witness)) by {
-      assert(witness_is_path && witness_forall);
-      if witness_is_path && witness_forall {
-        assert(witness_is_path);
+    assert(is_path(graph, start_node, destination_node, result));
+
+    let minimal_prop = forall|other: Seq<int>| #![trigger is_path(graph, start_node, destination_node, other)]
+      is_path(graph, start_node, destination_node, other) ==> path_cost(graph, result) <= path_cost(graph, other);
+    assert(minimal_prop);
+
+    assert(sp_dist(graph, start_node, destination_node) == Some(path_cost(graph, result))) by {
+      match sp_dist(graph, start_node, destination_node) {
+        Some(d) => {
+          assert(d == path_cost(graph, result));
+        }
+        Option::<int>::None => {
+          assert(false);
+        }
       }
     };
-    assert(forall|other: Seq<int>| is_path(graph, start_node, destination_node, other) ==>
-      path_cost(graph, witness) <= path_cost(graph, other)) by {
-      assert(witness_is_path && witness_forall);
-      if witness_is_path && witness_forall {
-        assert(witness_forall);
-      }
+
+    assert(path_cost(graph, result) <= path_cost(graph, path)) by {
+      assert(is_path(graph, start_node, destination_node, path));
+      assert(minimal_prop);
     };
 
-    assert(is_path(graph, start_node, destination_node, path));
-    assert(path_cost(graph, witness) <= path_cost(graph, path)) by {
-      assert(forall|other: Seq<int>| is_path(graph, start_node, destination_node, other) ==>
-        path_cost(graph, witness) <= path_cost(graph, other));
-    };
-
-    assert(sp_dist(graph, start_node, destination_node) == Some(path_cost(graph, witness)));
-    assert(match sp_dist(graph, start_node, destination_node) {
-      Some(d) => d <= path_cost(graph, path),
-      Option::<int>::None => false,
-    });
+    result
   }
 }
 
@@ -958,11 +1083,96 @@ proof fn is_better_lemma(dist: Seq<Option<int>>, start_node: int, new_node: int)
   }
 }
 
+proof fn is_better_or_equal_reverse(dist: Seq<Option<int>>, a: int, b: int)
+  requires
+    0 <= a < dist.len() as int,
+    0 <= b < dist.len() as int,
+    dist[a] matches Some(_),
+    dist[b] matches Some(_),
+  ensures
+    !is_better(dist, a, b) ==> (a == b || is_better(dist, b, a))
+{
+  match (dist[a], dist[b]) {
+    (Some(da), Some(db)) => {
+      if is_better(dist, a, b) {
+        assert(true);
+      } else {
+        if da < db {
+          assert(is_better(dist, a, b));
+        } else if da == db {
+          if a <= b {
+            assert(is_better(dist, a, b));
+          } else {
+            assert(is_better(dist, b, a));
+          }
+        } else {
+          assert(da > db);
+          assert(is_better(dist, b, a));
+        }
+      }
+    }
+    _ => {
+      assert(false);
+    }
+  }
+}
+
+proof fn is_better_transitive(dist: Seq<Option<int>>, a: int, b: int, c: int)
+  requires
+    0 <= a < dist.len() as int,
+    0 <= b < dist.len() as int,
+    0 <= c < dist.len() as int,
+    dist[a] matches Some(_),
+    dist[b] matches Some(_),
+    dist[c] matches Some(_),
+    is_better(dist, a, b),
+    is_better(dist, b, c),
+  ensures
+    is_better(dist, a, c)
+{
+  match (dist[a], dist[b], dist[c]) {
+    (Some(da), Some(db), Some(dc)) => {
+      if da < db {
+        if db < dc {
+          assert(da < dc);
+          assert(is_better(dist, a, c));
+        } else {
+          assert(db == dc);
+          match dist[b] {
+            Some(_) => {
+              assert(is_better(dist, b, c));
+              assert(is_better(dist, a, c));
+            }
+            Option::<int>::None => {
+              assert(false);
+            }
+          }
+        }
+      } else {
+        assert(da == db);
+        assert(a <= b);
+        if db < dc {
+          assert(da < dc);
+          assert(is_better(dist, a, c));
+        } else {
+          assert(db == dc);
+          assert(b <= c);
+          assert(a <= c);
+          assert(is_better(dist, a, c));
+        }
+      }
+    }
+    _ => {
+      assert(false);
+    }
+  }
+}
+
 spec fn unvisited_core(dist: Seq<Option<int>>, visited: Seq<bool>, start_node: int, best_node: Option<int>) -> Option<int>
   recommends
     dist.len() == visited.len(),
     0 <= start_node <= dist.len() as int,
-    best_node matches Some(_) ==> best_node.unwrap() < dist.len() as int,
+    best_node matches Some(best) ==> 0 <= best && best < dist.len() as int && is_cand(dist, visited, best),
   decreases
     dist.len() - start_node
 {
@@ -997,12 +1207,13 @@ proof fn unvisited_core_lemma(dist: Seq<Option<int>>, visited: Seq<bool>, start_
   requires
     dist.len() == visited.len(),
     0 <= start_node <= dist.len() as int,
-    best_node matches Some(_) ==> best_node.unwrap() < dist.len() as int,
+    best_node matches Some(best) ==> 0 <= best && best < dist.len() as int && is_cand(dist, visited, best),
   ensures
     match unvisited_core(dist, visited, start_node, best_node) {
       Option::Some(result_node) =>
+        0 <= result_node && result_node < dist.len() as int &&
         is_cand(dist, visited, result_node) &&
-        (forall|j: int| start_node <= j && j < dist.len() as int && is_cand(dist, visited, j) ==>
+        (forall|j: int| start_node <= j && j < dist.len() as int && #[trigger] is_cand(dist, visited, j) ==>
           result_node == j || is_better(dist, result_node, j)) &&
         (best_node matches Option::Some(best) ==>
           result_node == best || is_better(dist, result_node, best)),
@@ -1015,29 +1226,44 @@ proof fn unvisited_core_lemma(dist: Seq<Option<int>>, visited: Seq<bool>, start_
   decreases
     dist.len() - start_node
 {
-  // Base case: start_node is out of bounds
-  if start_node < 0 || start_node >= dist.len() as int || start_node >= visited.len() as int {
-    // Returns best_node directly
+  let dist_len = dist.len() as int;
+  let visited_len = visited.len() as int;
+
+  if start_node < 0 || start_node >= dist_len || start_node >= visited_len {
     match best_node {
       Option::Some(best) => {
-        // Since start_node >= dist.len(), there are no candidates j where start_node <= j < dist.len()
-        // So the forall is vacuously true (no such j exist)
-        // Also, result_node == best, so the condition "result_node == best || is_better(dist, result_node, best)" holds
-        assert(forall|j: int| start_node <= j && j < dist.len() as int && is_cand(dist, visited, j) ==>
+        assert(0 <= best && best < dist.len() as int);
+        assert(is_cand(dist, visited, best));
+        assert(forall|j: int|
+          start_node <= j && j < dist.len() as int && #[trigger] is_cand(dist, visited, j) ==>
           best == j || is_better(dist, best, j));
         assert(best == best || is_better(dist, best, best));
       }
       Option::<int>::None => {
-        // Since start_node >= dist.len(), there are no candidates j where start_node <= j < dist.len()
-        // So !exists|j| start_node <= j < dist.len() && is_cand(dist, visited, j) is true
-        // And best_node == Option::<int>::None is true
-        assert(!exists|j: int| start_node <= j && j < dist.len() as int && is_cand(dist, visited, j));
+        assert(!exists|j: int|
+          start_node <= j && j < dist.len() as int && #[trigger] is_cand(dist, visited, j));
         assert(best_node == Option::<int>::None);
       }
     }
   } else {
-    // Recursive case: check if start_node is a candidate
-    let new_best: Option<int> = if is_cand(dist, visited, start_node) {
+    assert(0 <= start_node && start_node < dist_len);
+    assert(start_node < visited_len);
+
+    let start_is_cand = is_cand(dist, visited, start_node);
+    if start_is_cand {
+      is_cand_lemma(dist, visited, start_node);
+    }
+
+    match best_node {
+      Option::Some(best) => {
+        assert(0 <= best && best < dist_len);
+        assert(is_cand(dist, visited, best));
+        is_cand_lemma(dist, visited, best);
+      }
+      Option::None => {}
+    }
+
+    let new_best: Option<int> = if start_is_cand {
       match best_node {
         Option::<int>::None => Option::Some(start_node),
         Option::Some(test_node) =>
@@ -1051,7 +1277,244 @@ proof fn unvisited_core_lemma(dist: Seq<Option<int>>, visited: Seq<bool>, start_
       best_node
     };
 
+    if start_is_cand {
+      match best_node {
+        Option::Some(test_node) => {
+          if is_better(dist, start_node, test_node) {
+            assert(new_best == Option::Some(start_node));
+          } else {
+            assert(new_best == best_node);
+          }
+        }
+        Option::None => {
+          assert(new_best == Option::Some(start_node));
+        }
+      }
+    } else {
+      assert(new_best == best_node);
+    }
+
+    match new_best {
+      Option::Some(nb) => {
+        if nb == start_node {
+          assert(start_is_cand);
+        } else {
+          match best_node {
+            Option::Some(best) => {
+              assert(nb == best);
+            }
+            Option::None => {
+              assert(false);
+            }
+          }
+        }
+        assert(0 <= nb && nb < dist_len);
+      }
+      Option::None => {
+        assert(!start_is_cand);
+      }
+    }
+
     unvisited_core_lemma(dist, visited, start_node + 1, new_best);
+
+    let rec_result = unvisited_core(dist, visited, start_node + 1, new_best);
+    match rec_result {
+      Option::Some(rec_node) => {
+        assert(0 <= rec_node && rec_node < dist.len() as int);
+        assert(is_cand(dist, visited, rec_node));
+        assert(forall|j: int|
+          start_node + 1 <= j && j < dist.len() as int && #[trigger] is_cand(dist, visited, j) ==>
+            rec_node == j || is_better(dist, rec_node, j));
+        let rec_best_rel =
+          match new_best {
+            Option::Some(nb) => rec_node == nb || is_better(dist, rec_node, nb),
+            Option::None => true,
+          };
+        assert forall|j: int|
+          start_node <= j && j < dist.len() as int && #[trigger] is_cand(dist, visited, j) ==>
+            rec_node == j || is_better(dist, rec_node, j)
+        by {
+          if start_node <= j && j < dist.len() as int && is_cand(dist, visited, j) {
+            if j == start_node {
+              if start_is_cand {
+                match new_best {
+                  Option::Some(nb) => {
+                    if nb == start_node {
+                      assert(rec_best_rel);
+                    } else {
+                      match best_node {
+                        Option::Some(best) => {
+                          assert(nb == best);
+                          assert(rec_best_rel);
+                          if rec_node == nb {
+                            if nb == start_node {
+                            } else {
+                              assert(is_better(dist, nb, start_node) || nb == start_node);
+                              if nb == start_node {
+                              } else {
+                                is_better_transitive(dist, rec_node, nb, start_node);
+                              }
+                            }
+                          } else {
+                            assert(is_better(dist, rec_node, nb));
+                            assert(is_better(dist, nb, start_node) || nb == start_node);
+                            if nb == start_node {
+                            } else {
+                              is_better_transitive(dist, rec_node, nb, start_node);
+                            }
+                          }
+                        }
+                        Option::None => {
+                          assert(false);
+                        }
+                      }
+                    }
+                  }
+                  Option::None => {
+                    assert(false);
+                  }
+                }
+              } else {
+                assert(false);
+              }
+            } else {
+              assert(start_node + 1 <= j);
+              assert(rec_node == j || is_better(dist, rec_node, j));
+            }
+          }
+        };
+
+        assert(best_node matches Option::Some(best) ==>
+          rec_node == best || is_better(dist, rec_node, best)) by {
+          if let Option::Some(best) = best_node {
+            if start_is_cand {
+              if is_better(dist, start_node, best) {
+                match new_best {
+                  Option::Some(nb) => {
+                    assert(nb == start_node);
+                    assert(rec_best_rel);
+                    if rec_node == start_node {
+                      assert(is_better(dist, start_node, best));
+                    } else {
+                      assert(is_better(dist, rec_node, start_node));
+                      is_better_transitive(dist, rec_node, start_node, best);
+                    }
+                  }
+                  Option::None => {
+                    assert(false);
+                  }
+                }
+              } else {
+                match new_best {
+                  Option::Some(nb) => {
+                    assert(nb == best);
+                    assert(rec_best_rel);
+                  }
+                  Option::None => {
+                    assert(false);
+                  }
+                }
+              }
+            } else {
+              match new_best {
+                Option::Some(nb) => {
+                  assert(nb == best);
+                  assert(rec_best_rel);
+                }
+                Option::None => {
+                  assert(false);
+                }
+              }
+            }
+          }
+        };
+      }
+      Option::<int>::None => {
+        let rec_none =
+          !exists|j: int| start_node + 1 <= j && j < dist.len() as int && #[trigger] is_cand(dist, visited, j);
+        assert(rec_none);
+
+        let rec_new_best_property =
+          new_best == Option::<int>::None || !is_cand(dist, visited, new_best.unwrap());
+        assert(rec_new_best_property);
+
+        assert(!start_is_cand) by {
+          if start_is_cand {
+            let nb = match best_node {
+              Option::Some(test_node) => {
+                if is_better(dist, start_node, test_node) {
+                  assert(new_best == Option::Some(start_node));
+                  start_node
+                } else {
+                  assert(new_best == best_node);
+                  assert(best_node == Option::Some(test_node));
+                  assert(new_best == Option::Some(test_node));
+                  test_node
+                }
+              }
+              Option::None => {
+                assert(new_best == Option::Some(start_node));
+                start_node
+              }
+            };
+            is_cand_lemma(dist, visited, nb);
+            match new_best {
+              Option::Some(value) => {
+                assert(value == nb);
+                assert(!is_cand(dist, visited, value)) by {
+                  assert(rec_new_best_property);
+                };
+                assert(is_cand(dist, visited, value)) by {
+                  assert(value == nb);
+                  assert(is_cand(dist, visited, nb));
+                };
+                assert(!is_cand(dist, visited, nb)) by {
+                  assert(!is_cand(dist, visited, value));
+                  assert(value == nb);
+                };
+              }
+              Option::None => {
+                assert(false);
+              }
+            }
+            assert(false) by {
+              assert(is_cand(dist, visited, nb));
+              assert(!is_cand(dist, visited, nb));
+            };
+          }
+        };
+
+        assert(!exists|j: int|
+          start_node <= j && j < dist.len() as int && #[trigger] is_cand(dist, visited, j)) by {
+          if exists|j: int|
+            start_node <= j && j < dist.len() as int && is_cand(dist, visited, j)
+          {
+            let witness = choose|j: int|
+              start_node <= j && j < dist.len() as int && is_cand(dist, visited, j);
+            if witness == start_node {
+              assert(start_is_cand);
+              assert(false) by {
+                assert(!start_is_cand);
+              };
+            } else {
+              assert(start_node + 1 <= witness);
+              assert(rec_none);
+            }
+          }
+        };
+
+        assert(new_best == best_node);
+        match best_node {
+          Option::Some(best) => {
+            assert(new_best == Option::Some(best));
+            assert(!is_cand(dist, visited, best)) by {
+              assert(rec_new_best_property);
+            };
+          }
+          Option::None => {}
+        }
+      }
+    }
   }
 }
 
@@ -1172,7 +1635,7 @@ spec fn get_updated_distance(graph: Graph, dist: Seq<Option<int>>, u: int, v: in
 // Recursive helper to find minimum distance through edges from u to v
 spec fn min_updated_distance_helper(graph: Graph, dist: Seq<Option<int>>, u: int, v: int, d_u: int, i: int) -> Option<int>
   recommends
-    is_valid(graph), // TODO: these are getting repeated a lot. Dry this up.
+    is_valid(graph),
     dist.len() == graph.number_of_nodes as int,
     0 <= u < graph.number_of_nodes as int,
     0 <= v < graph.number_of_nodes as int,
