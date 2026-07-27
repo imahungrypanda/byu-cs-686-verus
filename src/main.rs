@@ -7,6 +7,7 @@ mod hw6_dijkstra;
 mod class;
 mod example_1;
 use vstd::prelude::*;
+use vstd::arithmetic::mul;
 
 verus! {
 

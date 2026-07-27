@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<story-context>
+  <story-info>
+    <story-id>3</story-id>
+    <story-title>Implement GCD Specification and Proofs</title>
+    <epic>Homework 2: Recursion and Loops</epic>
+    <status>ready-for-dev</status>
+    <dependencies>
+      <dependency>Story 1 (Factorial) - for pattern reference</dependency>
+      <dependency>Story 2 (Sum to N) - for pattern reference</dependency>
+    </dependencies>
+  </story-info>
+
+  <technical-requirements>
+    <language>Rust with Verus</language>
+    <verus-version>Latest stable</verus-version>
+    <dependencies>
+      <dependency>vstd = { path = "/home/vscode/verus/source/vstd" }</dependency>
+    </dependencies>
+    <proof-mode>⚠️ CRITICAL: `nonlinear_arith` mode is NOT sufficient for gcd proofs</proof-mode>
+    <key-lemmas>
+      <lemma>vstd::arithmetic::div_mod::lemma_fundamental_div_mod</lemma>
+      <lemma>vstd::arithmetic::div_mod::lemma_mod_adds</lemma>
+      <lemma>lemma_mod_mul_zero (must implement first - provided in homework)</lemma>
+      <lemma>lemma_gcd_positive (must prove first)</lemma>
+    </key-lemmas>
+  </technical-requirements>
+
+  <architecture-compliance>
+    <file-location>src/main.rs (add to existing file)</file-location>
+    <code-structure>
+      <pattern>Follow same pattern as previous problems, but with more complex proofs</pattern>
+      <template-reference>docs/templates/triangle_example_template.rs</template-reference>
+      <spec-pattern>
+        <step>1. Define recursive spec function gcd(a: nat, b: nat) with decreases clause</step>
+        <step>2. Prove lemma_gcd_positive</step>
+        <step>3. Implement lemma_mod_mul_zero (prerequisite for step 4)</step>
+        <step>4. Prove lemma_gcd_divides (most complex proof)</step>
+        <step>5. Implement recursive exec function</step>
+        <step>6. Implement iterative exec function with carefully designed loop invariant</step>
+      </spec-pattern>
+    </code-structure>
+    <naming-conventions>
+      <spec-function>spec fn gcd(a: nat, b: nat) -> nat</spec-function>
+      <proof-function>proof fn lemma_gcd_*</proof-function>
+      <proof-function>proof fn lemma_mod_mul_zero</proof-function>
+      <exec-function>exec fn gcd_*</exec-function>
+    </naming-conventions>
+  </architecture-compliance>
+
+  <library-framework-requirements>
+    <required-imports>
+      <import>use vstd::prelude::*;</import>
+    </required-imports>
+    <vstd-modules>
+      <module>vstd::arithmetic::div_mod (for fundamental_div_mod, mod_adds)</module>
+      <module>vstd::arithmetic::mul (for mul_is_associative)</module>
+    </vstd-modules>
+    <no-external-crates>All functionality must use vstd library only</no-external-crates>
+  </library-framework-requirements>
+
+  <file-structure-requirements>
+    <primary-file>src/main.rs (append to existing code)</primary-file>
+    <code-organization>
+      <section>1. Spec function: gcd(a: nat, b: nat)</section>
+      <section>2. Proof: lemma_gcd_positive</section>
+      <section>3. Proof: lemma_mod_mul_zero (implement as provided in homework)</section>
+      <section>4. Proof: lemma_gcd_divides (uses all previous lemmas)</section>
+      <section>5. Recursive exec implementation</section>
+      <section>6. Iterative exec implementation (loop invariant is tricky)</section>
+    </code-organization>
+    <verification-block>All code must be inside `verus! { }` block</verification-block>
+  </file-structure-requirements>
+
+  <testing-requirements>
+    <development-testing>
+      <note>Can write normal `#[test]` functions and use `cargo test` to verify implementations before attempting proofs</note>
+      <pattern>Write tests first to ensure implementations work, then add proofs</pattern>
+    </development-testing>
+    <verification-requirements>
+      <requirement>All spec functions must verify</requirement>
+      <requirement>lemma_gcd_positive proof must complete</requirement>
+      <requirement>lemma_mod_mul_zero proof must complete</requirement>
+      <requirement>lemma_gcd_divides proof must complete (most complex)</requirement>
+      <requirement>Both implementations must verify (should be trivial with lemmas)</requirement>
+    </verification-requirements>
+  </testing-requirements>
+
+  <implementation-patterns>
+    <spec-pattern>
+      <template>
+        <code>
+spec fn gcd(a: nat, b: nat) -> nat
+    decreases a + b,  // or appropriate decreases measure
+{
+    if b == 0 {
+        a
+    } else {
+        gcd(b, a % b)
+    }
+}
+        </code>
+      </template>
+    </spec-pattern>
+    <lemma-gcd-positive>
+      <signature>
+        <code>
+proof fn lemma_gcd_positive(a: nat, b: nat)
+    requires
+        !(a == 0 && b == 0),
+    ensures
+        0 < gcd(a, b),
+        </code>
+      </signature>
+      <note>Must prove this before lemma_gcd_divides</note>
+    </lemma-gcd-positive>
+    <lemma-mod-mul-zero>
+      <signature>
+        <code>
+proof fn lemma_mod_mul_zero(x: int, q: int, m: int)
+    requires
+        m > 0,
+        x % m == 0,
+    ensures
+        (x * q) % m == 0,
+{
+    lemma_fundamental_div_mod(x, m);
+    lemma_mul_is_associative(m, (x / m), q);
+    lemma_mod_multiples_basic((x / m) * q, m);
+}
+        </code>
+      </signature>
+      <note>This is provided in homework - implement exactly as shown</note>
+      <prerequisite>Must complete before lemma_gcd_divides</prerequisite>
+    </lemma-mod-mul-zero>
+    <lemma-gcd-divides>
+      <signature>
+        <code>
+proof fn lemma_gcd_divides(a: nat, b: nat)
+    requires
+        !(a == 0 && b == 0),
+    ensures
+        a % gcd(a, b) == 0,
+        b % gcd(a, b) == 0,
+        </code>
+      </signature>
+      <required-lemmas>
+        <lemma>lemma_gcd_positive</lemma>
+        <lemma>lemma_fundamental_div_mod</lemma>
+        <lemma>lemma_mod_adds</lemma>
+        <lemma>lemma_mod_mul_zero</lemma>
+      </required-lemmas>
+      <note>⚠️ nonlinear_arith mode alone is NOT sufficient - must use lemmas manually</note>
+    </lemma-gcd-divides>
+    <loop-invariant-pattern>
+      <requirement>⚠️ Loop invariant is the TRICKY part, not the proof</requirement>
+      <guidance>Loop invariants must relate to the post-condition in the `ensures` clause</guidance>
+      <guidance>Loop invariants do NOT inherit pre-conditions - must state explicitly</guidance>
+      <reference>See Section 5.3 from homework notes</reference>
+    </loop-invariant-pattern>
+  </implementation-patterns>
+
+  <critical-constraints>
+    <constraint>⚠️ nonlinear_arith mode is NOT enough for gcd proofs - must use lemmas manually</constraint>
+    <constraint>Must implement lemma_mod_mul_zero FIRST (Task 3) before lemma_gcd_divides</constraint>
+    <constraint>Must prove lemma_gcd_positive before lemma_gcd_divides</constraint>
+    <constraint>Loop invariant design is critical - must relate to post-condition</constraint>
+    <constraint>Implementations should be trivial to prove once lemmas are established</constraint>
+  </critical-constraints>
+
+  <references>
+    <reference type="homework">homework/hw2-recursion-and-loops.md#Problem-3-greatest-common-divisor-gcd</reference>
+    <reference type="guide">https://verus-lang.github.io/verus/guide/nonlinear.html (Section 11.2)</reference>
+    <reference type="vstd">https://verus-lang.github.io/verus/verusdoc/vstd/arithmetic/div_mod/index.html</reference>
+    <reference type="story">Story 1 & 2 - for pattern reference</reference>
+  </references>
+
+  <common-pitfalls>
+    <pitfall>⚠️ Trying to use nonlinear_arith mode alone for gcd_divides proof (won't work)</pitfall>
+    <pitfall>Forgetting to implement lemma_mod_mul_zero first</pitfall>
+    <pitfall>Not using all required lemmas in lemma_gcd_divides</pitfall>
+    <pitfall>Loop invariant that doesn't relate to post-condition</pitfall>
+    <pitfall>Forgetting that loop invariants don't inherit pre-conditions</pitfall>
+    <pitfall>Overcomplicating implementations (they should be trivial with lemmas)</pitfall>
+  </common-pitfalls>
+
+  <success-criteria>
+    <criterion>Spec function verifies</criterion>
+    <criterion>lemma_gcd_positive proof completes</criterion>
+    <criterion>lemma_mod_mul_zero proof completes</criterion>
+    <criterion>lemma_gcd_divides proof completes (using all required lemmas)</criterion>
+    <criterion>Recursive implementation verifies</criterion>
+    <criterion>Iterative implementation verifies with proper loop invariant</criterion>
+    <criterion>All implementations return same value as spec</criterion>
+  </success-criteria>
+</story-context>

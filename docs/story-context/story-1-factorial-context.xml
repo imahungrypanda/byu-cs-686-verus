@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<story-context>
+  <story-info>
+    <story-id>1</story-id>
+    <story-title>Implement Factorial Specification and Proofs</title>
+    <epic>Homework 2: Recursion and Loops</epic>
+    <status>ready-for-dev</status>
+  </story-info>
+
+  <technical-requirements>
+    <language>Rust with Verus</language>
+    <verus-version>Latest stable</verus-version>
+    <dependencies>
+      <dependency>vstd = { path = "/home/vscode/verus/source/vstd" }</dependency>
+    </dependencies>
+    <proof-mode>Most proofs can use `nonlinear_arith` mode: `proof fn f(..) by (nonlinear_arith)`</proof-mode>
+    <key-lemmas>
+      <lemma>vstd::arithmetic::mul::lemma_mul_inequality (if not using nonlinear_arith)</lemma>
+    </key-lemmas>
+  </technical-requirements>
+
+  <architecture-compliance>
+    <file-location>src/main.rs</file-location>
+    <code-structure>
+      <pattern>Follow triangle example pattern from Chapter 4</pattern>
+      <template-reference>docs/templates/triangle_example_template.rs</template-reference>
+      <spec-pattern>
+        <step>1. Define recursive spec function with decreases clause</step>
+        <step>2. Prove properties (factorial >= 1, monotonicity)</step>
+        <step>3. Implement recursive exec function</step>
+        <step>4. Implement iterative exec function with loop invariant</step>
+      </spec-pattern>
+    </code-structure>
+    <naming-conventions>
+      <spec-function>spec fn factorial(n: nat) -> nat</spec-function>
+      <proof-function>proof fn lemma_factorial_*</proof-function>
+      <exec-function>exec fn factorial_*</exec-function>
+    </naming-conventions>
+  </architecture-compliance>
+
+  <library-framework-requirements>
+    <required-imports>
+      <import>use vstd::prelude::*;</import>
+    </required-imports>
+    <vstd-modules>
+      <module>vstd::arithmetic::mul (for lemma_mul_inequality)</module>
+    </vstd-modules>
+    <no-external-crates>All functionality must use vstd library only</no-external-crates>
+  </library-framework-requirements>
+
+  <file-structure-requirements>
+    <primary-file>src/main.rs</primary-file>
+    <code-organization>
+      <section>1. Spec function definitions</section>
+      <section>2. Proof functions (lemmas)</section>
+      <section>3. Recursive exec implementation</section>
+      <section>4. Iterative exec implementation</section>
+      <section>5. Test functions (optional, for development)</section>
+    </code-organization>
+    <verification-block>All code must be inside `verus! { }` block</verification-block>
+  </file-structure-requirements>
+
+  <testing-requirements>
+    <development-testing>
+      <note>Can write normal `#[test]` functions and use `cargo test` to verify implementations before attempting proofs</note>
+      <pattern>Write tests first to ensure implementations work, then add proofs</pattern>
+    </development-testing>
+    <verification-requirements>
+      <requirement>All spec functions must verify</requirement>
+      <requirement>All proof functions must complete successfully</requirement>
+      <requirement>All exec functions must verify against their spec</requirement>
+      <requirement>Recursive implementation must verify when `factorial(n as nat) <= usize::MAX`</requirement>
+      <requirement>Iterative implementation must verify when `factorial(n as nat) <= usize::MAX`</requirement>
+    </verification-requirements>
+  </testing-requirements>
+
+  <implementation-patterns>
+    <spec-pattern>
+      <template>
+        <code>
+spec fn factorial(n: nat) -> nat
+    decreases n,
+{
+    if n == 0 {
+        1
+    } else {
+        n * factorial((n - 1) as nat)
+    }
+}
+        </code>
+      </template>
+    </spec-pattern>
+    <proof-pattern>
+      <guidance>Control flow in proofs should follow control flow of specification</guidance>
+      <technique>Use `assume(false)` to develop proof path by path</technique>
+      <technique>Use `assert` to identify where Verus is stuck, then apply lemmas</technique>
+    </proof-pattern>
+    <monotonicity-proof>
+      <requirement>Prove: i <= j ==> factorial(i) <= factorial(j)</requirement>
+      <lemma-usage>If not using nonlinear_arith, use `lemma_mul_inequality` directly after recursive call</lemma-usage>
+    </monotonicity-proof>
+    <loop-invariant-pattern>
+      <requirement>Loop invariant must bound the iteration variable</requirement>
+      <requirement>Loop invariant must relate to post-condition in ensures clause</requirement>
+      <requirement>Use monotonic lemma for overflow/underflow reasoning</requirement>
+    </loop-invariant-pattern>
+  </implementation-patterns>
+
+  <critical-constraints>
+    <constraint>Must follow triangle example pattern exactly</constraint>
+    <constraint>Monotonic lemma is REQUIRED for both recursive and iterative implementations</constraint>
+    <constraint>Overflow protection: Only verify when `factorial(n as nat) <= usize::MAX`</constraint>
+    <constraint>Loop invariants do NOT inherit pre-conditions - must state explicitly</constraint>
+  </critical-constraints>
+
+  <references>
+    <reference type="homework">homework/hw2-recursion-and-loops.md#Problem-1-factorial</reference>
+    <reference type="guide">https://verus-lang.github.io/verus/guide/recursion_loops.html</reference>
+    <reference type="vstd">https://verus-lang.github.io/verus/verusdoc/vstd/arithmetic/mul/index.html</reference>
+    <reference type="template">docs/templates/triangle_example_template.rs</reference>
+    <reference type="template">docs/templates/recursive_spec_template.rs</reference>
+    <reference type="template">docs/templates/loop_invariant_template.rs</reference>
+  </references>
+
+  <common-pitfalls>
+    <pitfall>Forgetting decreases clause in spec function</pitfall>
+    <pitfall>Not using monotonic lemma for overflow reasoning</pitfall>
+    <pitfall>Loop invariant that doesn't relate to post-condition</pitfall>
+    <pitfall>Not following control flow of specification in proofs</pitfall>
+    <pitfall>Forgetting to use lemma_mul_inequality if not using nonlinear_arith</pitfall>
+  </common-pitfalls>
+
+  <success-criteria>
+    <criterion>Spec function verifies</criterion>
+    <criterion>factorial(n) >= 1 proof completes</criterion>
+    <criterion>Monotonicity proof completes</criterion>
+    <criterion>Recursive implementation verifies</criterion>
+    <criterion>Iterative implementation verifies</criterion>
+    <criterion>All implementations return same value as spec</criterion>
+  </success-criteria>
+</story-context>

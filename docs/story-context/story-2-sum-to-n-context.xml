@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<story-context>
+  <story-info>
+    <story-id>2</story-id>
+    <story-title>Implement Sum to N Specification and Proofs</title>
+    <epic>Homework 2: Recursion and Loops</epic>
+    <status>ready-for-dev</status>
+    <dependencies>
+      <dependency>Story 1 (Factorial) - for pattern reference</dependency>
+    </dependencies>
+  </story-info>
+
+  <technical-requirements>
+    <language>Rust with Verus</language>
+    <verus-version>Latest stable</verus-version>
+    <dependencies>
+      <dependency>vstd = { path = "/home/vscode/verus/source/vstd" }</dependency>
+    </dependencies>
+    <proof-mode>Can use `nonlinear_arith` mode OR specific lemmas</proof-mode>
+    <key-lemmas>
+      <lemma>vstd::arithmetic::mul::lemma_mul_is_commutative (if not using nonlinear_arith)</lemma>
+      <lemma>vstd::arithmetic::mul::lemma_mul_is_distributive_add (if not using nonlinear_arith)</lemma>
+    </key-lemmas>
+  </technical-requirements>
+
+  <architecture-compliance>
+    <file-location>src/main.rs (add to existing file)</file-location>
+    <code-structure>
+      <pattern>Follow same pattern as factorial (Story 1)</pattern>
+      <template-reference>docs/templates/triangle_example_template.rs (very similar pattern)</template-reference>
+      <spec-pattern>
+        <step>1. Define recursive spec function sum_to_n with decreases clause</step>
+        <step>2. Prove monotonicity (trivial - Verus handles automatically)</step>
+        <step>3. Prove formula: n * (n + 1) / 2 == sum_to_n(n)</step>
+        <step>4. Implement recursive exec function</step>
+        <step>5. Implement iterative exec function with loop invariant</step>
+      </spec-pattern>
+    </code-structure>
+    <naming-conventions>
+      <spec-function>spec fn sum_to_n(n: nat) -> nat</spec-function>
+      <proof-function>proof fn lemma_sum_to_n_*</proof-function>
+      <exec-function>exec fn sum_to_n_*</exec-function>
+    </naming-conventions>
+  </architecture-compliance>
+
+  <library-framework-requirements>
+    <required-imports>
+      <import>use vstd::prelude::*;</import>
+    </required-imports>
+    <vstd-modules>
+      <module>vstd::arithmetic::mul (for commutative and distributive lemmas)</module>
+    </vstd-modules>
+    <no-external-crates>All functionality must use vstd library only</no-external-crates>
+  </library-framework-requirements>
+
+  <file-structure-requirements>
+    <primary-file>src/main.rs (append to existing code)</primary-file>
+    <code-organization>
+      <section>1. Spec function: sum_to_n</section>
+      <section>2. Proof: lemma_sum_to_n_is_monotonic</section>
+      <section>3. Proof: formula equivalence (n * (n + 1) / 2 == sum_to_n(n))</section>
+      <section>4. Recursive exec implementation</section>
+      <section>5. Iterative exec implementation</section>
+    </code-organization>
+    <verification-block>All code must be inside `verus! { }` block</verification-block>
+  </file-structure-requirements>
+
+  <testing-requirements>
+    <development-testing>
+      <note>Can write normal `#[test]` functions and use `cargo test` to verify implementations before attempting proofs</note>
+      <pattern>Write tests first to ensure implementations work, then add proofs</pattern>
+    </development-testing>
+    <verification-requirements>
+      <requirement>All spec functions must verify</requirement>
+      <requirement>Monotonicity proof must complete (should be trivial)</requirement>
+      <requirement>Formula equivalence proof must complete</requirement>
+      <requirement>Both implementations must verify and match spec</requirement>
+    </verification-requirements>
+  </testing-requirements>
+
+  <implementation-patterns>
+    <spec-pattern>
+      <template>
+        <code>
+spec fn sum_to_n(n: nat) -> nat
+    decreases n,
+{
+    if n == 0 {
+        0
+    } else {
+        n + sum_to_n((n - 1) as nat)
+    }
+}
+        </code>
+      </template>
+    </spec-pattern>
+    <monotonicity-proof>
+      <note>This should be trivial - Verus doesn't need help</note>
+      <function-name>lemma_sum_to_n_is_monotonic</function-name>
+    </monotonicity-proof>
+    <formula-proof>
+      <goal>Prove: n * (n + 1) / 2 == sum_to_n(n)</goal>
+      <intermediate-step>May need to prove: n * (n - 1) + n + n == n * ((n - 1) + 2)</intermediate-step>
+      <lemma-usage>
+        <if-not-nonlinear-arith>
+          <lemma>lemma_mul_is_commutative</lemma>
+          <lemma>lemma_mul_is_distributive_add (for intermediate step)</lemma>
+        </if-not-nonlinear-arith>
+      </lemma-usage>
+    </formula-proof>
+    <loop-invariant-pattern>
+      <requirement>Follow same pattern as factorial</requirement>
+      <requirement>Use monotonic lemma for overflow reasoning</requirement>
+    </loop-invariant-pattern>
+  </implementation-patterns>
+
+  <critical-constraints>
+    <constraint>Must follow same pattern as factorial (Story 1)</constraint>
+    <constraint>Monotonicity proof should be automatic - don't overcomplicate</constraint>
+    <constraint>Formula proof is the main challenge - use lemmas strategically</constraint>
+    <constraint>Both implementations must match spec exactly</constraint>
+  </critical-constraints>
+
+  <references>
+    <reference type="homework">homework/hw2-recursion-and-loops.md#Problem-2-sum-of-n</reference>
+    <reference type="guide">https://verus-lang.github.io/verus/guide/recursion_loops.html</reference>
+    <reference type="story">Story 1 (Factorial) - for pattern reference</reference>
+    <reference type="template">docs/templates/triangle_example_template.rs</reference>
+  </references>
+
+  <common-pitfalls>
+    <pitfall>Overcomplicating monotonicity proof (it's trivial)</pitfall>
+    <pitfall>Not using distributive lemma for intermediate algebraic steps</pitfall>
+    <pitfall>Forgetting to prove the intermediate step: n * (n - 1) + n + n == n * ((n - 1) + 2)</pitfall>
+    <pitfall>Not following factorial pattern closely enough</pitfall>
+  </common-pitfalls>
+
+  <success-criteria>
+    <criterion>Spec function verifies</criterion>
+    <criterion>Monotonicity proof completes (trivially)</criterion>
+    <criterion>Formula equivalence proof completes: n * (n + 1) / 2 == sum_to_n(n)</criterion>
+    <criterion>Recursive implementation verifies</criterion>
+    <criterion>Iterative implementation verifies</criterion>
+    <criterion>All implementations return same value as spec</criterion>
+  </success-criteria>
+</story-context>
